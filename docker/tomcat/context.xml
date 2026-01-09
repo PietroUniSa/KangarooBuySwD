@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+  <Resource name="jdbc/kangaroodb"
+            auth="Container"
+            type="javax.sql.DataSource"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+            driverClassName="com.mysql.cj.jdbc.Driver"
+            url="jdbc:mysql://db:3306/kangaroodb?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC"
+            username="kangaroo"
+            password="kangaroo"
+            maxTotal="30"
+            maxIdle="10"
+            maxWaitMillis="10000"/>
+</Context>
