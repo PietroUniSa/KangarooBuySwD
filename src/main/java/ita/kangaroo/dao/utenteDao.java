@@ -28,6 +28,7 @@ public class utenteDao {
 
             ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
 
+
         } catch (NamingException e) {
             LOGGER.log( Level.SEVERE, e.toString(), e );
         }
