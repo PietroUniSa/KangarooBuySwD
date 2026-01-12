@@ -1,5 +1,5 @@
 services:
-  db:
+  db:  # ← Come "mysql" nella guida
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: kangaroodb
@@ -7,20 +7,27 @@ services:
       MYSQL_PASSWORD: kangaroo
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306"
+      - "3307:3306"  # ← OK per accesso esterno
     volumes:
-      - dbdata:/var/lib/mysql
-
+      - dbdata:/var/lib/mysql  # ← PERSISTENZA come todo-db!
+      - ./initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
   app:
-    build: .
+    image: kangaroo-app  # ← CAMBIA! Usa immagine buildata (come guida)
+    # RIMUOVI build: .  (usa docker build -t kangaroo-app . PRIMA)
     environment:
       DB_URL: jdbc:mysql://db:3306/kangaroodb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: kangaroo
       DB_PASS: kangaroo
     ports:
-      - "8081:8080"
+      - "8080:8080"  # ← Cambiato a 8080 (standard Tomcat)
     depends_on:
       - db
 
 volumes:
-  dbdata:
+  dbdata:  # ← Come "todo-db" della guida - Dati MySQL PERSISTENTI!

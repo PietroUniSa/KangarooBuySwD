@@ -1,8 +1,7 @@
-CREATE DATABASE  IF NOT EXISTS `kangaroo_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `kangaroo_db`;
+USE `kangaroodb`;
 -- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
 --
--- Host: localhost    Database: kangaroo_db
+-- Host: localhost    Database: kangaroodb
 -- ------------------------------------------------------
 -- Server version	8.0.43
 
