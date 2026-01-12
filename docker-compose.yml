@@ -18,7 +18,7 @@ services:
       retries: 20
       start_period: 30s
   app:
-    image: kangaroo-app  # ← CAMBIA! Usa immagine buildata (come guida)
+    image: pietrounisa/kangaroo-app:latest # ← CAMBIA! Usa immagine buildata (come guida)
     # RIMUOVI build: .  (usa docker build -t kangaroo-app . PRIMA)
     environment:
       DB_URL: jdbc:mysql://db:3306/kangaroodb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
