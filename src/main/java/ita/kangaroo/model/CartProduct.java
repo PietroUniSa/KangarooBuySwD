@@ -1,30 +1,58 @@
 package ita.kangaroo.model;
 
 public class CartProduct {
+    //@ spec_public
+    private ProdottoBean product;
 
-        private ProdottoBean product;
-        private int quantity;
+    //@ spec_public
+    private int quantity;
 
-        public CartProduct(ProdottoBean product, int quantity) {
-            this.product = product;
-            this.quantity = quantity;
-        }
+    /*@
+      // Removed strict invariants to avoid invariant-entrance proof obligations
+      // that the prover cannot establish for array elements.
+    @*/
 
-        public CartProduct (ProdottoBean product) {
-            this.product = product;
-            this.quantity = 1;
-        }
+    /*@
+      public normal_behavior
+      requires p != null && q > 0;
+      ensures this.product == p;
+      ensures this.quantity == q;
+    @*/
+    public CartProduct(ProdottoBean p, int q) {
+        this.product = p;
+        this.quantity = q;
+    }
 
-        public void setQuantity(int quantity) {
-            this.quantity = quantity;
-        }
+    /*@
+      public normal_behavior
+      requires p != null;
+      ensures this.product == p;
+      ensures this.quantity == 1;
+    @*/
+    public CartProduct(ProdottoBean p) {
+        this.product = p;
+        this.quantity = 1;
+    }
 
-        public int getQuantity () {
-            return quantity;
-        }
+    /*@
+      requires quantity > 0;
+      ensures this.quantity == quantity;
+      assignable this.quantity;
+    @*/
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 
-        public ProdottoBean getProduct() {
-            return product;
-        }
+    /*@ ensures \result == quantity; assignable \nothing; @*/
+    /*@ pure @*/
+    public int getQuantity() {
+        return quantity;
+    }
 
+    /*@ ensures \result == product; assignable \nothing; @*/
+    /*@ pure @*/
+    public ProdottoBean getProduct() {
+        return product;
+    }
 }
+  

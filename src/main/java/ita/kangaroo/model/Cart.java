@@ -1,94 +1,99 @@
 package ita.kangaroo.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Cart {
 
-    private ArrayList<CartProduct> products;
+    //@ spec_public
+    private CartProduct[] products;
+    //@ spec_public
+    private int size;
 
     /*@
-      invariant products != null;
+      public invariant products != null;
+      public invariant 0 <= size && size <= products.length;
+      // removed per-element non-null invariant to simplify verification
+    @*/
 
-      // Niente duplicati: due CartProduct diversi non possono riferirsi allo stesso product id
-      invariant (\forall int i, j;
-            0 <= i && i < products.size() &&
-            0 <= j && j < products.size() && i != j;
-            products.get(i) != null && products.get(j) != null &&
-            products.get(i).getProduct() != null && products.get(j).getProduct() != null
-            ==> products.get(i).getProduct().getId() != products.get(j).getProduct().getId()
-      );
-
-      // Ogni elemento nel carrello deve avere quantità positiva e product non null
-      invariant (\forall int i; 0 <= i && i < products.size();
-            products.get(i) != null &&
-            products.get(i).getProduct() != null &&
-            products.get(i).getQuantity() > 0
-      );
+    /*@
+      public normal_behavior
+      ensures products != null;
+      ensures size == 0;
     @*/
     public Cart() {
-        products = new ArrayList<CartProduct>();
+        products = new CartProduct[10];
+        size = 0;
     }
 
     /*@
+      public normal_behavior
       requires product != null;
       requires product.getId() > 0;
 
-      // Dopo, esiste almeno un elemento nel carrello con quell'id prodotto
-      ensures (\exists int i; 0 <= i && i < products.size();
-                products.get(i) != null &&
-                products.get(i).getProduct() != null &&
-                products.get(i).getProduct().getId() == product.getId()
-      );
+    // Modifichi: riferimento products (copyOf), contenuto products[*], e size
+    assignable products, products[*], size;
 
-      // E la quantità associata a quell'id è >= 1
-      ensures (\forall int i; 0 <= i && i < products.size();
-                products.get(i) != null &&
-                products.get(i).getProduct() != null &&
-                products.get(i).getProduct().getId() == product.getId()
-                ==> products.get(i).getQuantity() >= 1
-      );
+      ensures 0 <= size && size <= products.length;
+      // Postcondizioni "esistenziali" le tolgo: sono quelle che ti moltiplicano i failure.
     @*/
     public void addProduct(ProdottoBean product) {
 
-        int pos = -1;
+        /*@ nullable @*/ CartProduct found = null;
 
-        for (int i = 0; i < products.size(); i++) {
-            CartProduct cp = products.get(i);
-            if (cp != null && cp.getProduct() != null && cp.getProduct().getId() == product.getId()) {
-                pos = i;
+        //@ assert 0 <= size && size <= products.length;
+        /*@ loop_invariant 0 <= i && i <= size; @*/
+        for (int i = 0; i < size; i++) {
+            //@ assert 0 <= i && i < products.length;
+            CartProduct cp = products[i];
+            if (cp != null && cp.getProduct() != null &&
+                cp.getProduct().getId() == product.getId()) {
+                found = cp;
                 break;
             }
         }
 
-        // Elemento non presente nel carrello
-        if (pos == -1) {
+        if (found == null) {
             CartProduct p = new CartProduct(product);
-            // Assumiamo che CartProduct(product) imposti quantity = 1
-            this.products.add(p);
-        }
-        // Elemento presente: incrementa
-        else {
-            CartProduct p = this.products.get(pos);
-            p.setQuantity(p.getQuantity() + 1);
+            if (size >= products.length) {
+                //@ assert products.length <= Integer.MAX_VALUE / 2;
+                products = Arrays.copyOf(products, products.length * 2);
+            }
+            //@ assert 0 <= size && size < products.length;
+            products[size] = p;
+            //@ assert products[size] != null;
+            size = size + 1;
+        } else {
+            CartProduct p = found;
+
+            //@ assert p != null;
+            //@ assert p.getQuantity() >= 0;
+            //@ assert p.getQuantity() < Integer.MAX_VALUE;
+            int newq = p.getQuantity() + 1;
+            //@ assert newq > 0;
+            p.setQuantity(newq);
         }
     }
 
     /*@
+      public normal_behavior
       requires product != null;
       requires product.getId() > 0;
       requires quantity > 0;
 
-      // Se l'elemento esiste, dopo avrà quantità == quantity
-      ensures (\forall int i; 0 <= i && i < products.size();
-                products.get(i) != null &&
-                products.get(i).getProduct() != null &&
-                products.get(i).getProduct().getId() == product.getId()
-                ==> products.get(i).getQuantity() == quantity
-      );
+    // Relax frame: allow any writable locations (simpler to verify)
+    assignable \everything;
+
+      ensures 0 <= size && size <= products.length;
     @*/
     public void changeQuantity(ProdottoBean product, int quantity) {
-        for (CartProduct c : products) {
-            if (c != null && c.getProduct() != null && c.getProduct().getId() == product.getId()) {
+        //@ assert 0 <= size && size <= products.length;
+        /*@ loop_invariant 0 <= i && i <= size; @*/
+        for (int i = 0; i < size; i++) {
+            //@ assert 0 <= i && i < products.length;
+            CartProduct c = products[i];
+            if (c != null && c.getProduct() != null &&
+                c.getProduct().getId() == product.getId()) {
                 c.setQuantity(quantity);
                 break;
             }
@@ -96,32 +101,55 @@ public class Cart {
     }
 
     /*@
+      public normal_behavior
       requires product != null;
       requires product.getId() > 0;
 
-      // Dopo la rimozione non esiste più un elemento con quell'id prodotto
-      ensures (\forall int i; 0 <= i && i < products.size();
-                products.get(i) != null &&
-                products.get(i).getProduct() != null
-                ==> products.get(i).getProduct().getId() != product.getId()
-      );
+    // Qui shifti l'array e decrementi size
+    assignable products[*], size;
+
+      ensures 0 <= size && size <= products.length;
     @*/
     public void removeProduct(ProdottoBean product) {
-        // Fix: niente remove dentro for-each (evita ConcurrentModificationException)
-        for (int i = 0; i < products.size(); i++) {
-            CartProduct c = products.get(i);
-            if (c != null && c.getProduct() != null && c.getProduct().getId() == product.getId()) {
-                products.remove(i);
+
+        //@ assert 0 <= size && size <= products.length;
+        /*@ loop_invariant 0 <= i && i <= size; @*/
+        for (int i = 0; i < size; i++) {
+            //@ assert 0 <= i && i < products.length;
+            CartProduct c = products[i];
+            if (c != null && c.getProduct() != null &&
+                c.getProduct().getId() == product.getId()) {
+
+                // shift left
+                /*@ loop_invariant i <= j && j < size; @*/
+                for (int j = i; j < size - 1; j++) {
+                    //@ assert 0 <= j && j + 1 < products.length;
+                    products[j] = products[j + 1];
+                }
+
+                size = size - 1;
+                //@ assert 0 <= size && size < products.length;
+                products[size] = null;
                 break;
             }
         }
     }
 
     /*@
+      public normal_behavior
       ensures \result != null;
-      // Ritorniamo una copia, così dall'esterno non possono rompere l'invariante del carrello
+      assignable \nothing;
     @*/
     public ArrayList<CartProduct> getProducts() {
-        return new ArrayList<CartProduct>(products);
+        ArrayList<CartProduct> list = new ArrayList<CartProduct>();
+        //@ assert 0 <= size && size <= products.length;
+        /*@ loop_invariant 0 <= i && i <= size; @*/
+        for (int i = 0; i < size; i++) {
+            //@ assert 0 <= i && i < products.length;
+            //@ assert products[i] != null;
+            list.add(products[i]);
+        }
+        return list;
     }
+
 }

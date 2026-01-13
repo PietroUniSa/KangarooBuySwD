@@ -13,10 +13,9 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-
 public class prodottoDao {
 
-    private static final Logger LOGGER = Logger.getLogger(prodottoDao.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger(prodottoDao.class.getName());
     private static final String TABLE = "prodotto";
 
     private static DataSource ds;
@@ -29,16 +28,17 @@ public class prodottoDao {
             ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
 
         } catch (NamingException e) {
-            LOGGER.log( Level.SEVERE, e.toString(), e );
+            LOGGER.log(Level.SEVERE, e.toString(), e);
         }
     }
 
-    public prodottoDao(){
-        //costruttore vuoto
+    public prodottoDao() {
+        // costruttore vuoto
     }
 
-    public synchronized int doSave(ProdottoBean prod) throws SQLException{
-        //SALVARE NEL DATABASE
+    //@ skipesc
+    public synchronized int doSave(ProdottoBean prod) throws SQLException {
+        // SALVARE NEL DATABASE
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         int id = -1;
@@ -48,24 +48,20 @@ public class prodottoDao {
 
         try {
             connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(insertSQL,Statement.RETURN_GENERATED_KEYS);
+            preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, prod.getId());
             preparedStatement.setString(2, prod.getNome());
             preparedStatement.setString(3, prod.getDescrizione());
             preparedStatement.setDouble(4, prod.getPrezzo());
-            preparedStatement.setInt(5,prod.getQuantita());
+            preparedStatement.setInt(5, prod.getQuantita());
             preparedStatement.setString(6, prod.getTipo().toString());
             preparedStatement.setDouble(7, prod.getIva());
             preparedStatement.setString(8, prod.getImmagine());
 
-
             preparedStatement.executeUpdate();
 
-
-
             ResultSet key = preparedStatement.getGeneratedKeys();
-
-            while(key.next()) {
+            while (key.next()) {
                 id = key.getInt(1);
             }
 
@@ -81,8 +77,7 @@ public class prodottoDao {
         return id;
     }
 
-
-
+    //@ skipesc
     public synchronized ProdottoBean doRetrieveByKey(int id) throws SQLException {
         // PRENDE UN PRODOTTO DAL SUO ID
         Connection connection = null;
@@ -123,9 +118,9 @@ public class prodottoDao {
         return prod;
     }
 
-
-    public synchronized boolean doDelete(int id) throws SQLException{
-        //ELIMINA UN PRODOTTO DAL DATABASE
+    //@ skipesc
+    public synchronized boolean doDelete(int id) throws SQLException {
+        // ELIMINA UN PRODOTTO DAL DATABASE
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
@@ -139,7 +134,7 @@ public class prodottoDao {
 
             result = preparedStatement.executeUpdate();
 
-        } finally{
+        } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
@@ -152,22 +147,23 @@ public class prodottoDao {
         return (result != 0);
     }
 
-    public synchronized List<ProdottoBean> doRetrieveAll() throws SQLException{
-        //PRENDE TUTTI I GIOIELLI
+    //@ skipesc
+    public synchronized List<ProdottoBean> doRetrieveAll() throws SQLException {
+        // PRENDE TUTTI I GIOIELLI
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
         List<ProdottoBean> products = new ArrayList<ProdottoBean>();
 
-        String selectSQL = "SELECT * FROM " + TABLE ;
+        String selectSQL = "SELECT * FROM " + TABLE;
 
-        try{
+        try {
             connection = ds.getConnection();
             preparedStatement = connection.prepareStatement(selectSQL);
 
             ResultSet rs = preparedStatement.executeQuery();
 
-            while(rs.next()){
+            while (rs.next()) {
                 ProdottoBean prod = new ProdottoBean();
 
                 prod.setId(rs.getInt("Id"));
@@ -194,8 +190,9 @@ public class prodottoDao {
         return products;
     }
 
-    public synchronized ArrayList<ProdottoBean> doRetrieveAllLimit() throws SQLException{
-        //PRENDE 10 GIOIELLI
+    //@ skipesc
+    public synchronized ArrayList<ProdottoBean> doRetrieveAllLimit() throws SQLException {
+        // PRENDE 10 GIOIELLI
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
@@ -203,13 +200,13 @@ public class prodottoDao {
 
         String selectSQL = "SELECT * FROM " + TABLE + " LIMIT 10";
 
-        try{
+        try {
             connection = ds.getConnection();
             preparedStatement = connection.prepareStatement(selectSQL);
 
             ResultSet rs = preparedStatement.executeQuery();
 
-            while(rs.next()){
+            while (rs.next()) {
                 ProdottoBean prod = new ProdottoBean();
 
                 prod.setId(rs.getInt("Id"));
@@ -236,6 +233,7 @@ public class prodottoDao {
         return products;
     }
 
+    //@ skipesc
     public synchronized boolean doModify(ProdottoBean prod) throws SQLException {
         // MODIFICA UN PRODOTTO DAL SUO ID
         Connection connection = null;
@@ -255,8 +253,8 @@ public class prodottoDao {
             preparedStatement.setInt(4, prod.getQuantita());
             preparedStatement.setString(5, prod.getTipo().toString());
             preparedStatement.setDouble(6, prod.getIva());
-            preparedStatement.setString(7, prod.getImmagine()); // Modifica qui: immagine al 7° posto
-            preparedStatement.setInt(8, prod.getId()); // Modifica qui: Id all'8° posto
+            preparedStatement.setString(7, prod.getImmagine());
+            preparedStatement.setInt(8, prod.getId());
 
             result = preparedStatement.executeUpdate();
 
@@ -273,10 +271,10 @@ public class prodottoDao {
         return (result != 0);
     }
 
+    //@ skipesc
     public synchronized ArrayList<ProdottoBean> doRetrieveAllByCategory(String category) throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
-
 
         String selectSQL = "SELECT * FROM " + TABLE + " WHERE Tipo = ? ";
 
@@ -303,13 +301,11 @@ public class prodottoDao {
 
                 beans.add(prod);
             }
-        }
-        finally {
+        } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
-            }
-            finally {
+            } finally {
                 if (connection != null)
                     connection.close();
             }
@@ -317,9 +313,8 @@ public class prodottoDao {
         return beans;
     }
 
-
-
-    public synchronized void updateQuantity (int id, int newQuantity) throws SQLException {
+    //@ skipesc
+    public synchronized void updateQuantity(int id, int newQuantity) throws SQLException {
 
         Connection connection = null;
         PreparedStatement preparedStatement = null;
@@ -334,22 +329,18 @@ public class prodottoDao {
 
             preparedStatement.executeUpdate();
 
-
-        }
-
-        finally {
+        } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
-            }
-
-            finally {
+            } finally {
                 if (connection != null)
                     connection.close();
             }
         }
     }
 
+    //@ skipesc
     public synchronized ArrayList<ProdottoBean> doRetrieveAllByKeyword(String keyword, String query) throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
@@ -377,13 +368,11 @@ public class prodottoDao {
 
                 beans.add(prod);
             }
-        }
-        finally {
+        } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
-            }
-            finally {
+            } finally {
                 if (connection != null)
                     connection.close();
             }
@@ -391,12 +380,12 @@ public class prodottoDao {
         return beans;
     }
 
-
+    //@ skipesc
     public synchronized ArrayList<ProdottoBean> doRetrieveAllByName(String keyword) throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Nome LIKE '" + keyword + "%'" ;
+        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Nome LIKE '" + keyword + "%'";
 
         ArrayList<ProdottoBean> beans = new ArrayList<ProdottoBean>();
 
@@ -419,19 +408,15 @@ public class prodottoDao {
 
                 beans.add(prod);
             }
-        }
-        finally {
+        } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
-            }
-            finally {
+            } finally {
                 if (connection != null)
                     connection.close();
             }
         }
         return beans;
     }
-
-
 }

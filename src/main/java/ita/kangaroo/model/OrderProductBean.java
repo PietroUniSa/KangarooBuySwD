@@ -8,27 +8,30 @@ public class OrderProductBean {
     private int quantita;
     private float IVA;
 
-    public OrderProductBean(){
-        //costruttore vuoto
+    public OrderProductBean() {
+        // costruttore vuoto
     }
 
-    public int getId_ordine(){
+    /*@ pure @*/
+    public int getId_ordine() {
         return id_ordine;
     }
 
-    public void setId_ordine(int id_ordine){
+    public void setId_ordine(int id_ordine) {
         this.id_ordine = id_ordine;
     }
 
-    public int getId_prodotto(){
+    /*@ pure @*/
+    public int getId_prodotto() {
         return id_prodotto;
     }
 
-    public void setId_prodotto(int id_prodotto){
+    public void setId_prodotto(int id_prodotto) {
         this.id_prodotto = id_prodotto;
     }
 
-    public float getPrezzo(){
+    /*@ pure @*/
+    public float getPrezzo() {
         return prezzo;
     }
 
@@ -36,6 +39,7 @@ public class OrderProductBean {
         this.prezzo = prezzo;
     }
 
+    /*@ pure @*/
     public int getQuantita() {
         return quantita;
     }
@@ -44,6 +48,7 @@ public class OrderProductBean {
         this.quantita = quantita;
     }
 
+    /*@ pure @*/
     public float getIVA() {
         return IVA;
     }

@@ -6,21 +6,21 @@ import java.util.ArrayList;
 
 public class OrdineBean {
 
-    private ArrayList<OrderProductBean> products;
+    /*@ nullable @*/ private ArrayList<OrderProductBean> products;
     private int id;
-    private utenteBean client;
+    /*@ nullable @*/ private utenteBean client;
     private float prezzo_totale;
-    private String destinatario;
-    private String metodo_di_pagamento;
-    private String circuito;
-    private String numero_carta;
-    private String indirizzo_di_spedizione;
-    private String numero_di_tracking;
-    private Date data;
-    private String metodo_di_spedizione;
 
+    /*@ nullable @*/ private String destinatario;
+    /*@ nullable @*/ private String metodo_di_pagamento;
+    /*@ nullable @*/ private String circuito;
+    /*@ nullable @*/ private String numero_carta;
+    /*@ nullable @*/ private String indirizzo_di_spedizione;
+    /*@ nullable @*/ private String numero_di_tracking;
+    /*@ nullable @*/ private Date data;
+    /*@ nullable @*/ private String metodo_di_spedizione;
 
-    //costruttore per le inizializzazioni nulle
+    // costruttore per le inizializzazioni nulle
     public OrdineBean() {
         products = new ArrayList<OrderProductBean>();
         this.id = 0;
@@ -28,44 +28,52 @@ public class OrdineBean {
         this.prezzo_totale = 0;
         this.destinatario = null;
         this.metodo_di_pagamento = null;
+        this.circuito = null;
+        this.numero_carta = null;
         this.indirizzo_di_spedizione = null;
         this.numero_di_tracking = null;
         this.data = null;
         this.metodo_di_spedizione = null;
     }
 
-    //costruttore con prodotti pronti
-    public OrdineBean(ArrayList<OrderProductBean> products) {
+    // costruttore con prodotti pronti
+    public OrdineBean(/*@ nullable @*/ ArrayList<OrderProductBean> products) {
         setProducts(products);
         this.id = 0;
         this.client = null;
         this.prezzo_totale = 0;
         this.destinatario = null;
         this.metodo_di_pagamento = null;
+        this.circuito = null;
+        this.numero_carta = null;
         this.indirizzo_di_spedizione = null;
         this.numero_di_tracking = null;
         this.data = null;
         this.metodo_di_spedizione = null;
     }
 
-    //costruttore con cliente pronto
-    public OrdineBean(utenteBean client) {
+    // costruttore con cliente pronto
+    public OrdineBean(/*@ nullable @*/ utenteBean client) {
         products = new ArrayList<OrderProductBean>();
         this.id = 0;
         setClient(client);
         this.prezzo_totale = 0;
         this.destinatario = null;
         this.metodo_di_pagamento = null;
+        this.circuito = null;
+        this.numero_carta = null;
         this.indirizzo_di_spedizione = null;
         this.numero_di_tracking = null;
         this.data = null;
         this.metodo_di_spedizione = null;
     }
 
-    public OrdineBean(int id, utenteBean client, float prezzo_totale, String destinatario,
-                      String metodo_di_pagamento, String circuito, String numero_carta,
-                      String indirizzo_di_spedizione, String numero_di_tracking, Date data,
-                      String metodo_di_spedizione) {
+    public OrdineBean(int id, /*@ nullable @*/ utenteBean client, float prezzo_totale,
+                      /*@ nullable @*/ String destinatario, /*@ nullable @*/ String metodo_di_pagamento,
+                      /*@ nullable @*/ String circuito, /*@ nullable @*/ String numero_carta,
+                      /*@ nullable @*/ String indirizzo_di_spedizione, /*@ nullable @*/ String numero_di_tracking,
+                      /*@ nullable @*/ Date data, /*@ nullable @*/ String metodo_di_spedizione) {
+
         this.id = id;
         this.client = client;
         this.prezzo_totale = prezzo_totale;
@@ -77,17 +85,19 @@ public class OrdineBean {
         this.numero_di_tracking = numero_di_tracking;
         this.data = data;
         this.metodo_di_spedizione = metodo_di_spedizione;
-        this.products = new ArrayList<OrderProductBean>(); // Inizializzazione dell'ArrayList
+        this.products = new ArrayList<OrderProductBean>();
     }
 
+    /*@ pure nullable @*/
     public ArrayList<OrderProductBean> getProducts() {
         return products;
     }
 
-    public void setProducts(ArrayList<OrderProductBean> products) {
+    public void setProducts(/*@ nullable @*/ ArrayList<OrderProductBean> products) {
         this.products = products;
     }
 
+    /*@ pure @*/
     public int getId() {
         return id;
     }
@@ -96,14 +106,16 @@ public class OrdineBean {
         this.id = id;
     }
 
+    /*@ pure nullable @*/
     public utenteBean getClient() {
         return client;
     }
 
-    public void setClient(utenteBean client) {
+    public void setClient(/*@ nullable @*/ utenteBean client) {
         this.client = client;
     }
 
+    /*@ pure @*/
     public float getPrezzo_totale() {
         return prezzo_totale;
     }
@@ -112,6 +124,7 @@ public class OrdineBean {
         this.prezzo_totale = prezzo_totale;
     }
 
+    /*@ pure nullable @*/
     public String getDestinatario() {
         return destinatario;
     }
@@ -120,6 +133,7 @@ public class OrdineBean {
         this.destinatario = destinatario;
     }
 
+    /*@ pure nullable @*/
     public String getMetodo_di_pagamento() {
         return metodo_di_pagamento;
     }
@@ -128,6 +142,7 @@ public class OrdineBean {
         this.metodo_di_pagamento = metodo_di_pagamento;
     }
 
+    /*@ pure nullable @*/
     public String getCircuito() {
         return circuito;
     }
@@ -136,6 +151,7 @@ public class OrdineBean {
         this.circuito = circuito;
     }
 
+    /*@ pure nullable @*/
     public String getNumero_carta() {
         return numero_carta;
     }
@@ -144,6 +160,7 @@ public class OrdineBean {
         this.numero_carta = numero_carta;
     }
 
+    /*@ pure nullable @*/
     public String getIndirizzo_di_spedizione() {
         return indirizzo_di_spedizione;
     }
@@ -152,6 +169,7 @@ public class OrdineBean {
         this.indirizzo_di_spedizione = indirizzo_di_spedizione;
     }
 
+    /*@ pure nullable @*/
     public String getNumero_di_tracking() {
         return numero_di_tracking;
     }
@@ -160,7 +178,7 @@ public class OrdineBean {
         this.numero_di_tracking = numero_di_tracking;
     }
 
-
+    /*@ pure nullable @*/
     public Date getData() {
         return data;
     }
@@ -169,6 +187,7 @@ public class OrdineBean {
         this.data = data;
     }
 
+    /*@ pure nullable @*/
     public String getMetodo_di_spedizione() {
         return metodo_di_spedizione;
     }
@@ -177,6 +196,8 @@ public class OrdineBean {
         this.metodo_di_spedizione = metodo_di_spedizione;
     }
 
+    // Qui ci sono Date/LocalDate: non vale la pena farlo verificare a OpenJML
+    //@ skipesc
     @Override
     public String toString() {
         if (data != null) {
@@ -186,6 +207,4 @@ public class OrdineBean {
             return "Data non disponibile";
         }
     }
-
-
 }

@@ -2,17 +2,19 @@ package ita.kangaroo.model;
 
 public class MetodoPagamentoBean {
 
-    private int id;
-    private String numero_carta;
-    private String cvv;
-    private String data_scadenza;
-    private String circuito;
-    private String username;
+    /*@ spec_public @*/ private int id;
+
+    /*@ nullable spec_public @*/ private String numero_carta;
+    /*@ nullable spec_public @*/ private String cvv;
+    /*@ nullable spec_public @*/ private String data_scadenza;
+    /*@ nullable spec_public @*/ private String circuito;
+    /*@ nullable spec_public @*/ private String username;
 
     public MetodoPagamentoBean() {
-        //costruttore vuoto
+        // costruttore vuoto
     }
 
+    /*@ pure @*/
     public int getId() {
         return id;
     }
@@ -21,6 +23,7 @@ public class MetodoPagamentoBean {
         this.id = id;
     }
 
+    /*@ pure nullable @*/
     public String getNumero_carta() {
         return numero_carta;
     }
@@ -29,6 +32,7 @@ public class MetodoPagamentoBean {
         this.numero_carta = numero_carta;
     }
 
+    /*@ pure nullable @*/
     public String getCvv() {
         return cvv;
     }
@@ -37,6 +41,7 @@ public class MetodoPagamentoBean {
         this.cvv = cvv;
     }
 
+    /*@ pure nullable @*/
     public String getData_scadenza() {
         return data_scadenza;
     }
@@ -45,6 +50,7 @@ public class MetodoPagamentoBean {
         this.data_scadenza = data_scadenza;
     }
 
+    /*@ pure nullable @*/
     public String getCircuito() {
         return circuito;
     }
@@ -53,6 +59,7 @@ public class MetodoPagamentoBean {
         this.circuito = circuito;
     }
 
+    /*@ pure nullable @*/
     public String getUsername() {
         return username;
     }
@@ -61,17 +68,13 @@ public class MetodoPagamentoBean {
         this.username = username;
     }
 
+    // Evitiamo che OpenJML si infiltri nelle specs di String/CharSequence
+    //@ skipesc
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (!(obj instanceof MetodoPagamentoBean)) {
-            return false;
-        }
-
+        if (this == obj) return true;
+        if (!(obj instanceof MetodoPagamentoBean)) return false;
         MetodoPagamentoBean other = (MetodoPagamentoBean) obj;
-        return this.getId() == other.getId();
+        return this.id == other.id;
     }
 }

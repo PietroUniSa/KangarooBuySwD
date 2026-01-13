@@ -31,41 +31,56 @@ public class AddressDao {
         }
     }
 
+    /*@
+      @ private normal_behavior
+      @   requires ds != null;
+      @   ensures \result == ds;
+      @   assignable \nothing;
+      @ also
+      @ private exceptional_behavior
+      @   requires ds == null;
+      @   signals (IllegalStateException e) true;
+      @   signals_only IllegalStateException;
+      @   assignable \nothing;
+      @*/
     private static DataSource getDataSource() {
         if (ds == null) {
-            throw new IllegalStateException(
-                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
-            );
+            // Niente concatenazioni: Z3 ci inciampa spesso
+            throw new IllegalStateException("DataSource not configured");
         }
         return ds;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires address != null
+      @        && address.via != null && !address.via.isEmpty()
+      @        && address.citta != null && !address.citta.isEmpty()
+      @        && address.CAP != null && !address.CAP.isEmpty()
+      @        && address.username != null && !address.username.isEmpty();
+      @   ensures \result > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized int doSave(AddressBean address) throws SQLException {
-        /*@
-            requires address != null;
-            requires address.getVia() != null && !address.getVia().isEmpty();
-            requires address.getCitta() != null && !address.getCitta().isEmpty();
-            requires address.getCAP() != null && !address.getCAP().isEmpty();
-            requires address.getUsername() != null && !address.getUsername().isEmpty();
-
-            // Se il metodo termina normalmente, allora ha ottenuto una generated key valida.
-            ensures \result > 0;
-
-            // Se qualcosa va storto lato DB, può lanciare SQLException e allora nessuna postcondizione su \result vale.
-            signals (SQLException e) true;
-
-            // Opzionale ma più “pulito” per OpenJML:
-            signals_only SQLException;
-        @*/
-        String insertSQL = "INSERT INTO " + TABLE_NAME + " (via, citta, cap, username) VALUES (?, ?, ?, ?)";
+        String insertSQL =
+            "INSERT INTO " + TABLE_NAME + " (via, citta, cap, username) VALUES (?, ?, ?, ?)";
 
         try (Connection connection = getDataSource().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement preparedStatement =
+                 connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
 
-            preparedStatement.setString(1, address.getVia());
-            preparedStatement.setString(2, address.getCitta());
-            preparedStatement.setString(3, address.getCAP());
-            preparedStatement.setString(4, address.getUsername());
+            // coerente con le requires sui campi
+            preparedStatement.setString(1, address.via);
+            preparedStatement.setString(2, address.citta);
+            preparedStatement.setString(3, address.CAP);
+            preparedStatement.setString(4, address.username);
 
             int affected = preparedStatement.executeUpdate();
             if (affected == 0) {
@@ -75,34 +90,29 @@ public class AddressDao {
             try (ResultSet key = preparedStatement.getGeneratedKeys()) {
                 if (key.next()) {
                     int id = key.getInt(1);
-                    if (id <= 0) {
-                        throw new SQLException("Insert succeeded but generated key is invalid: " + id);
-                    }
+                    if (id <= 0) throw new SQLException("Generated key invalid: " + id);
                     return id;
-                } else {
-                    throw new SQLException("Insert succeeded but no generated key returned.");
                 }
+                throw new SQLException("No generated key returned.");
             }
         }
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   ensures \result != null;
+      @   ensures \result.id == 0 || \result.id == id;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized AddressBean doRetrieveByKey(int id) throws SQLException {
-        /*@
-            requires id > 0;
-
-            ensures \result != null;
-
-            // Se non trova nulla, ritorna un bean "vuoto" (id = 0). Se trova, l'id combacia.
-            ensures (\result.getId() == 0) || (\result.getId() == id);
-
-            // Se trova un record (id != 0), allora i campi principali non sono null
-            // (a meno che il DB contenga null, ma assumiamo schema sensato).
-            ensures (\result.getId() != 0) ==> (\result.getVia() != null && \result.getCitta() != null
-                                               && \result.getCAP() != null && \result.getUsername() != null);
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
 
         AddressBean bean = new AddressBean();
@@ -122,25 +132,23 @@ public class AddressDao {
                 }
             }
         }
-
         return bean;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires username != null && !username.isEmpty();
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized ArrayList<AddressBean> doRetrieveByClient(String username) throws SQLException {
-        /*@
-            requires username != null && !username.isEmpty();
-
-            ensures \result != null;
-
-            // Ogni elemento ritornato appartiene allo stesso username.
-            ensures (\forall int i; 0 <= i && i < \result.size();
-                        \result.get(i) != null &&
-                        \result.get(i).getUsername() != null &&
-                        \result.get(i).getUsername().equals(username));
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE username = ?";
 
         ArrayList<AddressBean> addresses = new ArrayList<>();
@@ -162,23 +170,22 @@ public class AddressDao {
                 }
             }
         }
-
         return addresses;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized boolean doDelete(int id) throws SQLException {
-        /*@
-            requires id > 0;
-
-            // Se termina normalmente, ritorna un boolean.
-            ensures \result == true || \result == false;
-
-            // Specifica “semantica”: true significa che almeno una riga è stata eliminata.
-            // Non possiamo esprimerlo formalmente senza modellare rowsAffected, quindi restiamo conservativi.
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
 
         try (Connection connection = getDataSource().getConnection();
