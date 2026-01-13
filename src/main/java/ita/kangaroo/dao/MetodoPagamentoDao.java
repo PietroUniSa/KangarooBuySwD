@@ -38,7 +38,7 @@ public class MetodoPagamentoDao {
             LOGGER.log( Level.SEVERE, e.toString(), e );
         }
     }
-    private static final String TABLE_NAME = "Metodo_di_pagamento";
+    private static final String TABLE_NAME = "metodo_di_pagamento";
 
     public synchronized int doSave(MetodoPagamentoBean bean) throws SQLException {
         //SALVA NEL DATABASE UN'ISTANZA DELLA TABELLA METODO_DI_PAGAMENTO
