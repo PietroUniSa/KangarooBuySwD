@@ -1,0 +1,47 @@
+name: CI Pipeline for Kangaroo App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: kangaroodb
+          MYSQL_USER: kangaroo
+          MYSQL_PASSWORD: kangaroo
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-timeout=10s
+          --health-retries=5
+        volumes:
+          - dbdata:/var/lib/mysql
+          - ./initdb:/docker-entrypoint-initdb.d
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Maven
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Install Dependencies
+        run: mvn clean install -DskipTests
+
+      - name: Run Tests
+        run: mvn test
