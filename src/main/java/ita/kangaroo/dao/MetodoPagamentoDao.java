@@ -2,18 +2,13 @@ package ita.kangaroo.dao;
 
 import ita.kangaroo.model.MetodoPagamentoBean;
 
-import java.util.ArrayList;
-
-
-
 import java.sql.Connection;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,7 +18,11 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 
 public class MetodoPagamentoDao {
-    private static final Logger LOGGER = Logger.getLogger(MetodoPagamentoDao.class.getName() );
+
+    private static final Logger LOGGER = Logger.getLogger(MetodoPagamentoDao.class.getName());
+
+    private static final String TABLE_NAME = "Metodo_di_pagamento";
+    private static final String JNDI_NAME = "jdbc/kangaroodb";
 
     private static DataSource ds;
 
@@ -31,164 +30,156 @@ public class MetodoPagamentoDao {
         try {
             Context initCtx = new InitialContext();
             Context envCtx = (Context) initCtx.lookup("java:comp/env");
-
-            ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
-
+            ds = (DataSource) envCtx.lookup(JNDI_NAME);
         } catch (NamingException e) {
-            LOGGER.log( Level.SEVERE, e.toString(), e );
+            LOGGER.log(Level.SEVERE, "JNDI DataSource lookup failed for: " + JNDI_NAME, e);
+            ds = null;
         }
     }
-    private static final String TABLE_NAME = "metodo_di_pagamento";
+
+    private static DataSource getDataSource() {
+        if (ds == null) {
+            throw new IllegalStateException(
+                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
+            );
+        }
+        return ds;
+    }
 
     public synchronized int doSave(MetodoPagamentoBean bean) throws SQLException {
-        //SALVA NEL DATABASE UN'ISTANZA DELLA TABELLA METODO_DI_PAGAMENTO
+        /*@
+            requires bean != null;
+            requires bean.getNumero_carta() != null && !bean.getNumero_carta().isEmpty();
+            requires bean.getCvv() != null && !bean.getCvv().isEmpty();
+            requires bean.getData_scadenza() != null && !bean.getData_scadenza().isEmpty();
+            requires bean.getUsername() != null && !bean.getUsername().isEmpty();
+            // Se l'insert va a buon fine deve ritornare un id > 0
+            ensures \result > 0;
+            signals (SQLException e) true;
+        @*/
+        String insertSQL =
+            "INSERT INTO " + TABLE_NAME + " (numero_di_carta, cvv, data_scadenza, circuito, Username) " +
+            "VALUES (?, ?, ?, ?, ?)";
 
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-        int id = -1;
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement =
+                 connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
 
-        String insertSQL = "INSERT INTO " + TABLE_NAME + "(numero_di_carta, cvv, data_scadenza, circuito, Username)" +
-                " VALUES (?, ?, ?, ?, ?)";
-
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setString(1, bean.getNumero_carta());
             preparedStatement.setString(2, bean.getCvv());
             preparedStatement.setString(3, bean.getData_scadenza());
-            preparedStatement.setString(4,bean.getCircuito());
+            preparedStatement.setString(4, bean.getCircuito());
             preparedStatement.setString(5, bean.getUsername());
 
-            preparedStatement.executeUpdate();
-
-
-            ResultSet key = preparedStatement.getGeneratedKeys();
-
-            while(key.next()) {
-                id = key.getInt(1);
+            int affected = preparedStatement.executeUpdate();
+            if (affected == 0) {
+                throw new SQLException("Insert failed, no rows affected.");
             }
 
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+            try (ResultSet key = preparedStatement.getGeneratedKeys()) {
+                if (key.next()) {
+                    int id = key.getInt(1);
+                    if (id <= 0) {
+                        throw new SQLException("Insert succeeded but generated key is invalid: " + id);
+                    }
+                    return id;
+                } else {
+                    throw new SQLException("Insert succeeded but no generated key returned.");
+                }
             }
         }
-
-        return id;
     }
 
     public synchronized boolean doDelete(int id) throws SQLException {
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-
-        int result = 0;
-
+        /*@
+            requires id > 0;
+            ensures \result == true || \result == false;
+            signals (SQLException e) true;
+        @*/
         String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(deleteSQL);
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
+
             preparedStatement.setInt(1, id);
-
-            result = preparedStatement.executeUpdate();
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
-            }
+            int result = preparedStatement.executeUpdate();
+            return result != 0;
         }
-        return (result != 0);
     }
 
     public synchronized MetodoPagamentoBean doRetrieveByKey(int id) throws SQLException {
-        //RITORNA UN PaymentMethodBean PRENDENDOLO IN BASE AL SUO ID
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-
+        /*@
+            requires id > 0;
+            ensures \result != null;
+            ensures (\result.getId() == id) || (\result.getId() == 0);
+            signals (SQLException e) true;
+        @*/
         MetodoPagamentoBean bean = new MetodoPagamentoBean();
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " where id = ?";
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(selectSQL);
             preparedStatement.setInt(1, id);
 
-            ResultSet rs = preparedStatement.executeQuery();
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                if (rs.next()) {
+                    bean.setId(rs.getInt("id"));
+                    bean.setNumero_carta(rs.getString("numero_di_carta"));
+                    bean.setCvv(rs.getString("cvv"));
+                    bean.setData_scadenza(rs.getString("data_scadenza"));
+                    bean.setCircuito(rs.getString("circuito"));
 
-            while (rs.next()) {
-
-                bean.setId(rs.getInt("id"));
-                bean.setNumero_carta(rs.getString("numero_di_carta"));
-                bean.setCvv(rs.getString("cvv"));
-                bean.setData_scadenza(rs.getString("data_scadenza"));
-                bean.setCircuito(rs.getString("circuito"));
-                bean.setUsername(rs.getString("username"));
-
-            }
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+                    // Nota: in tabella tu usi "Username" nel WHERE. Qui leggo "username".
+                    // Su MySQL spesso non importa, ma su DB case-sensitive sì. Uniforma lo schema.
+                    bean.setUsername(rs.getString("username"));
+                    if (bean.getUsername() == null) {
+                        bean.setUsername(rs.getString("Username"));
+                    }
+                }
             }
         }
-
 
         return bean;
     }
 
-
     public synchronized ArrayList<MetodoPagamentoBean> doRetrieveByClient(String username) throws SQLException {
-        //PERMETTE AD UN CLIENTE DI PRENDERE TUTTI I SUOI PaymentMethodBean INSERITI (in base allo username)
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
+        /*@
+            requires username != null && !username.isEmpty();
+            ensures \result != null;
+            ensures (\forall int i; 0 <= i && i < \result.size();
+                       \result.get(i).getUsername() != null &&
+                       \result.get(i).getUsername().equals(username));
+            signals (SQLException e) true;
+        @*/
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Username = ?";
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Username = ? ";
+        ArrayList<MetodoPagamentoBean> beans = new ArrayList<>();
 
-        ArrayList<MetodoPagamentoBean> beans = new ArrayList<MetodoPagamentoBean>();
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(selectSQL);
             preparedStatement.setString(1, username);
 
-            ResultSet rs = preparedStatement.executeQuery();
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                while (rs.next()) {
+                    MetodoPagamentoBean bean = new MetodoPagamentoBean();
 
-            while (rs.next()) {
-                MetodoPagamentoBean bean = new MetodoPagamentoBean();
+                    bean.setId(rs.getInt("id"));
+                    bean.setNumero_carta(rs.getString("numero_di_carta"));
+                    bean.setCvv(rs.getString("cvv"));
+                    bean.setData_scadenza(rs.getString("data_scadenza"));
+                    bean.setCircuito(rs.getString("circuito"));
 
-                bean.setId(rs.getInt("id"));
-                bean.setNumero_carta(rs.getString("numero_di_carta"));
-                bean.setCvv(rs.getString("cvv"));
-                bean.setData_scadenza(rs.getString("data_scadenza"));
-                bean.setCircuito(rs.getString("circuito"));
-                bean.setUsername(rs.getString("username"));
+                    String u = rs.getString("username");
+                    if (u == null) u = rs.getString("Username");
+                    bean.setUsername(u);
 
-                beans.add(bean);
-            }
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+                    beans.add(bean);
+                }
             }
         }
+
         return beans;
     }
-
 }

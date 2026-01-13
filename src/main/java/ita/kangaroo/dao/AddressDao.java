@@ -1,11 +1,9 @@
 package ita.kangaroo.dao;
 
-
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import java.sql.*;
 
 import ita.kangaroo.model.AddressBean;
 
@@ -14,10 +12,11 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-
 public class AddressDao {
 
-    private static final Logger LOGGER = Logger.getLogger(AddressDao.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger(AddressDao.class.getName());
+    private static final String TABLE_NAME = "indirizzo";
+    private static final String JNDI_NAME = "jdbc/kangaroodb";
 
     private static DataSource ds;
 
@@ -25,168 +24,170 @@ public class AddressDao {
         try {
             Context initCtx = new InitialContext();
             Context envCtx = (Context) initCtx.lookup("java:comp/env");
-
-            ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
-
+            ds = (DataSource) envCtx.lookup(JNDI_NAME);
         } catch (NamingException e) {
-            LOGGER.log( Level.SEVERE, e.toString(), e );
-
+            LOGGER.log(Level.SEVERE, "JNDI DataSource lookup failed for: " + JNDI_NAME, e);
+            ds = null;
         }
     }
-    private static final String TABLE_NAME = "indirizzo";
+
+    private static DataSource getDataSource() {
+        if (ds == null) {
+            throw new IllegalStateException(
+                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
+            );
+        }
+        return ds;
+    }
 
     public synchronized int doSave(AddressBean address) throws SQLException {
-        //SALVA NEL DATABASE UN'ISTANZA DELLA TABELLA INDIRIZZO
+        /*@
+            requires address != null;
+            requires address.getVia() != null && !address.getVia().isEmpty();
+            requires address.getCitta() != null && !address.getCitta().isEmpty();
+            requires address.getCAP() != null && !address.getCAP().isEmpty();
+            requires address.getUsername() != null && !address.getUsername().isEmpty();
 
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-        int id = -1;
+            // Se il metodo termina normalmente, allora ha ottenuto una generated key valida.
+            ensures \result > 0;
 
+            // Se qualcosa va storto lato DB, può lanciare SQLException e allora nessuna postcondizione su \result vale.
+            signals (SQLException e) true;
 
-        String insertSQL = "INSERT INTO " + TABLE_NAME + "(via, citta, cap, username)"+
-                " VALUES ( ?, ?, ?, ?)";
+            // Opzionale ma più “pulito” per OpenJML:
+            signals_only SQLException;
+        @*/
+        String insertSQL = "INSERT INTO " + TABLE_NAME + " (via, citta, cap, username) VALUES (?, ?, ?, ?)";
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+
             preparedStatement.setString(1, address.getVia());
             preparedStatement.setString(2, address.getCitta());
-            preparedStatement.setString(3,address.getCAP());
+            preparedStatement.setString(3, address.getCAP());
             preparedStatement.setString(4, address.getUsername());
 
-            preparedStatement.executeUpdate();
-
-
-            ResultSet key = preparedStatement.getGeneratedKeys();
-
-            while(key.next()) {
-                id = key.getInt(1);
+            int affected = preparedStatement.executeUpdate();
+            if (affected == 0) {
+                throw new SQLException("Insert failed, no rows affected.");
             }
 
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+            try (ResultSet key = preparedStatement.getGeneratedKeys()) {
+                if (key.next()) {
+                    int id = key.getInt(1);
+                    if (id <= 0) {
+                        throw new SQLException("Insert succeeded but generated key is invalid: " + id);
+                    }
+                    return id;
+                } else {
+                    throw new SQLException("Insert succeeded but no generated key returned.");
+                }
             }
         }
-
-        return id;
     }
 
     public synchronized AddressBean doRetrieveByKey(int id) throws SQLException {
-        // RESTITUISCE L'INDIRIZZO DI UN CLIENTE CON UN DATO ID
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
+        /*@
+            requires id > 0;
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ? ";
+            ensures \result != null;
+
+            // Se non trova nulla, ritorna un bean "vuoto" (id = 0). Se trova, l'id combacia.
+            ensures (\result.getId() == 0) || (\result.getId() == id);
+
+            // Se trova un record (id != 0), allora i campi principali non sono null
+            // (a meno che il DB contenga null, ma assumiamo schema sensato).
+            ensures (\result.getId() != 0) ==> (\result.getVia() != null && \result.getCitta() != null
+                                               && \result.getCAP() != null && \result.getUsername() != null);
+
+            signals (SQLException e) true;
+            signals_only SQLException;
+        @*/
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
+
         AddressBean bean = new AddressBean();
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(selectSQL);
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
+
             preparedStatement.setInt(1, id);
 
-
-            ResultSet rs = preparedStatement.executeQuery();
-
-            while (rs.next()) {
-
-                bean.setId(rs.getInt("id"));
-                bean.setVia(rs.getString("via"));
-                bean.setCitta(rs.getString("citta"));
-                bean.setCAP(rs.getString("cap"));
-                bean.setUsername(rs.getString("username"));
-
-            }
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                if (rs.next()) {
+                    bean.setId(rs.getInt("id"));
+                    bean.setVia(rs.getString("via"));
+                    bean.setCitta(rs.getString("citta"));
+                    bean.setCAP(rs.getString("cap"));
+                    bean.setUsername(rs.getString("username"));
+                }
             }
         }
-
 
         return bean;
     }
 
     public synchronized ArrayList<AddressBean> doRetrieveByClient(String username) throws SQLException {
-        // RESTITUISCE TUTTI GLI INDIRIZZI DI UN CLIENTE
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
+        /*@
+            requires username != null && !username.isEmpty();
 
+            ensures \result != null;
+
+            // Ogni elemento ritornato appartiene allo stesso username.
+            ensures (\forall int i; 0 <= i && i < \result.size();
+                        \result.get(i) != null &&
+                        \result.get(i).getUsername() != null &&
+                        \result.get(i).getUsername().equals(username));
+
+            signals (SQLException e) true;
+            signals_only SQLException;
+        @*/
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE username = ?";
 
-        ArrayList<AddressBean> addresses = new ArrayList<AddressBean>();
+        ArrayList<AddressBean> addresses = new ArrayList<>();
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(selectSQL);
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
+
             preparedStatement.setString(1, username);
 
-            ResultSet rs = preparedStatement.executeQuery();
-
-            while (rs.next()) {
-                AddressBean bean = new AddressBean();
-
-                bean.setId(rs.getInt("id"));
-                bean.setVia(rs.getString("via"));
-                bean.setCitta(rs.getString("citta"));
-                bean.setCAP(rs.getString("cap"));
-                bean.setUsername(rs.getString("username"));
-
-
-                addresses.add(bean);
-            }
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                while (rs.next()) {
+                    AddressBean bean = new AddressBean();
+                    bean.setId(rs.getInt("id"));
+                    bean.setVia(rs.getString("via"));
+                    bean.setCitta(rs.getString("citta"));
+                    bean.setCAP(rs.getString("cap"));
+                    bean.setUsername(rs.getString("username"));
+                    addresses.add(bean);
+                }
             }
         }
+
         return addresses;
     }
 
-
-
-
     public synchronized boolean doDelete(int id) throws SQLException {
-        //ELIMINA UN INDIRIZZO
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
+        /*@
+            requires id > 0;
 
-        int result = 0;
+            // Se termina normalmente, ritorna un boolean.
+            ensures \result == true || \result == false;
 
-        String deleteSQL = "DELETE  FROM " + TABLE_NAME + " where id = ?";
+            // Specifica “semantica”: true significa che almeno una riga è stata eliminata.
+            // Non possiamo esprimerlo formalmente senza modellare rowsAffected, quindi restiamo conservativi.
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(deleteSQL);
+            signals (SQLException e) true;
+            signals_only SQLException;
+        @*/
+        String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
+
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
+
             preparedStatement.setInt(1, id);
 
-
-            result = preparedStatement.executeUpdate();
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
-            }
+            int result = preparedStatement.executeUpdate();
+            return result != 0;
         }
-        return (result != 0);
     }
-
 }
