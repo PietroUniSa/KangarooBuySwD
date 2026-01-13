@@ -35,7 +35,13 @@ public class FatturazioneDao {
     }
 
     public synchronized void doSave(FatturazioneBean invoice) throws SQLException{
-        //SALVARE NEL DATABASE
+                /*@
+                    requires invoice != null;
+                    requires invoice.getId() >= 0;
+                    requires invoice.getData_emissione() != null;
+                    ensures \true;
+                @*/
+                //SALVARE NEL DATABASE
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
@@ -74,7 +80,13 @@ public class FatturazioneDao {
         String selectSQL = "SELECT * FROM " + TABLE + " WHERE id = ?";
         FatturazioneBean invoice = new FatturazioneBean();
 
-        try {
+                /*@
+                    requires id >= 0;
+                    ensures \result != null;
+                    ensures (\result.getId() == id) || (\result.getId() == 0);
+                @*/
+
+                try {
             connection = ds.getConnection();
             preparedStatement = connection.prepareStatement(selectSQL);
             preparedStatement.setInt(1, id);
