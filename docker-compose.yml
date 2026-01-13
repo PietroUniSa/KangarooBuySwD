@@ -9,7 +9,7 @@ services:
     ports:
       - "3307:3306"  # ← OK per accesso esterno
     volumes:
-      - dbdata:/var/lib/mysql  # ← PERSISTENZA come todo-db!
+      - dbdata:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
@@ -18,14 +18,13 @@ services:
       retries: 20
       start_period: 30s
   app:
-    image: pietrounisa/kangaroo-app:latest # ← CAMBIA! Usa immagine buildata (come guida)
-    # RIMUOVI build: .  (usa docker build -t kangaroo-app . PRIMA)
+    image: pietrounisa/kangaroo-app:latest
     environment:
       DB_URL: jdbc:mysql://db:3306/kangaroodb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: kangaroo
       DB_PASS: kangaroo
     ports:
-      - "8080:8080"  # ← Cambiato a 8080 (standard Tomcat)
+      - "8080:8080"
     depends_on:
       - db
 

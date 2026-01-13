@@ -37,7 +37,16 @@ public class utenteDao {
     public utenteDao(){
         //costruttore vuoto
     }
-
+    /*@
+  requires client != null;
+  requires client.getUsername() != null && !client.getUsername().isEmpty();
+  requires client.getPassword() != null && !client.getPassword().isEmpty();
+  requires client.getCognome() != null && !client.getCognome().isEmpty();
+  requires client.getNome() != null && !client.getNome().isEmpty();
+  requires client.getEmail() != null && !client.getEmail().isEmpty();
+  requires client.getTipo() != null;
+  ensures \result >= 0;
+@*/
     public synchronized int doSave(utenteBean client) throws SQLException{
         //SALVA NEL DATABASE
         Connection connection = null;
@@ -75,6 +84,12 @@ public class utenteDao {
         }
         return result;
     }
+    /*@
+  requires email != null && !email.isEmpty();
+  requires password != null && !password.isEmpty();
+  ensures \result == null ||
+          (\result.getEmail().equals(email) && \result.getPassword() != null);
+@*/
     public synchronized utenteBean doRetrieveByEmailAndPassword(String email, String password) throws SQLException{
         //PRENDE UN UTENTE DAL SUO EMAIL E PASSWORD
         Connection connection = null;
@@ -124,7 +139,10 @@ public class utenteDao {
 
         return client;
     }
-
+    /*@
+      requires username != null && !username.isEmpty();
+      ensures \result == null || \result.getUsername().equals(username);
+    @*/
     public synchronized utenteBean doRetrieveByKey(String username) throws SQLException{
         //PRENDE UN UTENTE DAL SUO USERNAME
         Connection connection = null;
@@ -174,7 +192,14 @@ public class utenteDao {
 
         return client;
     }
-
+    /*@
+      requires client != null;
+      requires client.getUsername() != null && !client.getUsername().isEmpty();
+      requires client.getCognome() != null && !client.getCognome().isEmpty();
+      requires client.getNome() != null && !client.getNome().isEmpty();
+      requires client.getEmail() != null && !client.getEmail().isEmpty();
+      ensures \result >= 0;
+    @*/
     public synchronized int doModify(utenteBean client) throws SQLException{
         //SALVA LE MODIFICHE NEL DATABASE
         Connection connection = null;
@@ -210,7 +235,10 @@ public class utenteDao {
         }
         return result;
     }
-
+    /*@
+      requires email != null && !email.isEmpty();
+      ensures \result == null || \result.getEmail().equals(email);
+    @*/
     public synchronized utenteBean doRetrieveByEmail(String email) throws SQLException{
         //PRENDE UN UTENTE DAL SUO EMAIL E PASSWORD
         Connection connection = null;
@@ -261,7 +289,11 @@ public class utenteDao {
 
         return client;
     }
-
+    /*@
+      ensures \result != null;
+      ensures (\forall int i; 0 <= i && i < \result.size();
+               \result.get(i).getUsername() != null);
+    @*/
     public synchronized ArrayList < utenteBean > doRetrieveAll() throws SQLException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
