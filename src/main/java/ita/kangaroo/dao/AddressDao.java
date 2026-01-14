@@ -45,19 +45,23 @@ public class AddressDao {
       @*/
     private static DataSource getDataSource() {
         if (ds == null) {
-            // Niente concatenazioni: Z3 ci inciampa spesso
             throw new IllegalStateException("DataSource not configured");
         }
         return ds;
     }
 
+    // Normalizza le stringhe dal DB: mai null, coerente con AddressBean
+    private static String nn(String s) {
+        return (s == null) ? "" : s;
+    }
+
     /*@
       @ public normal_behavior
       @   requires address != null
-      @        && address.via != null && !address.via.isEmpty()
-      @        && address.citta != null && !address.citta.isEmpty()
-      @        && address.CAP != null && !address.CAP.isEmpty()
-      @        && address.username != null && !address.username.isEmpty();
+      @        && address.getVia() != null && !address.getVia().isEmpty()
+      @        && address.getCitta() != null && !address.getCitta().isEmpty()
+      @        && address.getCAP() != null && !address.getCAP().isEmpty()
+      @        && address.getUsername() != null && !address.getUsername().isEmpty();
       @   ensures \result > 0;
       @   assignable \everything;
       @ also
@@ -76,11 +80,10 @@ public class AddressDao {
              PreparedStatement preparedStatement =
                  connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
 
-            // coerente con le requires sui campi
-            preparedStatement.setString(1, address.via);
-            preparedStatement.setString(2, address.citta);
-            preparedStatement.setString(3, address.CAP);
-            preparedStatement.setString(4, address.username);
+            preparedStatement.setString(1, address.getVia());
+            preparedStatement.setString(2, address.getCitta());
+            preparedStatement.setString(3, address.getCAP());
+            preparedStatement.setString(4, address.getUsername());
 
             int affected = preparedStatement.executeUpdate();
             if (affected == 0) {
@@ -88,12 +91,14 @@ public class AddressDao {
             }
 
             try (ResultSet key = preparedStatement.getGeneratedKeys()) {
-                if (key.next()) {
-                    int id = key.getInt(1);
-                    if (id <= 0) throw new SQLException("Generated key invalid: " + id);
-                    return id;
+                if (!key.next()) {
+                    throw new SQLException("No generated key returned.");
                 }
-                throw new SQLException("No generated key returned.");
+                int id = key.getInt(1);
+                if (id <= 0) {
+                    throw new SQLException("Generated key invalid: " + id);
+                }
+                return id;
             }
         }
     }
@@ -102,7 +107,7 @@ public class AddressDao {
       @ public normal_behavior
       @   requires id > 0;
       @   ensures \result != null;
-      @   ensures \result.id == 0 || \result.id == id;
+      @   ensures \result.getId() == 0 || \result.getId() == id;
       @   assignable \everything;
       @ also
       @ public exceptional_behavior
@@ -125,10 +130,10 @@ public class AddressDao {
             try (ResultSet rs = preparedStatement.executeQuery()) {
                 if (rs.next()) {
                     bean.setId(rs.getInt("id"));
-                    bean.setVia(rs.getString("via"));
-                    bean.setCitta(rs.getString("citta"));
-                    bean.setCAP(rs.getString("cap"));
-                    bean.setUsername(rs.getString("username"));
+                    bean.setVia(nn(rs.getString("via")));
+                    bean.setCitta(nn(rs.getString("citta")));
+                    bean.setCAP(nn(rs.getString("cap")));          // "" è valido per AddressBean
+                    bean.setUsername(nn(rs.getString("username")));
                 }
             }
         }
@@ -162,10 +167,10 @@ public class AddressDao {
                 while (rs.next()) {
                     AddressBean bean = new AddressBean();
                     bean.setId(rs.getInt("id"));
-                    bean.setVia(rs.getString("via"));
-                    bean.setCitta(rs.getString("citta"));
-                    bean.setCAP(rs.getString("cap"));
-                    bean.setUsername(rs.getString("username"));
+                    bean.setVia(nn(rs.getString("via")));
+                    bean.setCitta(nn(rs.getString("citta")));
+                    bean.setCAP(nn(rs.getString("cap")));
+                    bean.setUsername(nn(rs.getString("username")));
                     addresses.add(bean);
                 }
             }

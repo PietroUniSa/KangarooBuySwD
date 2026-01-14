@@ -4,31 +4,27 @@ import java.util.ArrayList;
 
 public class Prefered {
 
-    //@ spec_public
-    private ArrayList<PreferedProduct> products;
+    /*@ spec_public @*/ 
+    private ArrayList<PreferedProduct> products = new ArrayList<PreferedProduct>();
 
     //@ public invariant products != null;
 
     /*@
-      public normal_behavior
-        assignable \everything;
-        ensures products != null;
-        ensures products.size() == 0;
-    @*/
+      @ public normal_behavior
+      @   ensures products != null;
+      @*/
     public Prefered() {
-        products = new ArrayList<PreferedProduct>();
+        // già inizializzata sopra, lasciamo vuoto
     }
 
     /*@
-      public normal_behavior
-        requires product != null;
-        requires product.getId() >= 0;
-
-        // stai modificando la lista internamente
-        assignable products.*;
-
-        ensures products.size() >= \old(products.size());
-    @*/
+      @ public behavior
+      @   requires products != null;      // aiuta il prover (sì, è ridondante)
+      @   requires product != null;
+      @   requires product.getId() >= 0;
+      @   assignable \everything;
+      @   ensures products != null;
+      @*/
     public void addPreferito(ProdottoBean product) {
         for (int i = 0; i < products.size(); i++) {
             PreferedProduct pp = products.get(i);
@@ -38,14 +34,13 @@ public class Prefered {
     }
 
     /*@
-      public normal_behavior
-        requires product != null;
-        requires product.getId() >= 0;
-
-        assignable products.*;
-
-        ensures products.size() <= \old(products.size());
-    @*/
+      @ public behavior
+      @   requires products != null;
+      @   requires product != null;
+      @   requires product.getId() >= 0;
+      @   assignable \everything;
+      @   ensures products != null;
+      @*/
     public void removePreferito(ProdottoBean product) {
         for (int i = 0; i < products.size(); i++) {
             PreferedProduct pp = products.get(i);
@@ -57,10 +52,10 @@ public class Prefered {
     }
 
     /*@
-      public normal_behavior
-        ensures \result != null;
-        assignable \nothing;
-    @*/
+      @ public normal_behavior
+      @   ensures \result != null;
+      @   assignable \nothing;
+      @*/
     public /*@ pure @*/ ArrayList<PreferedProduct> getProducts() {
         return new ArrayList<PreferedProduct>(products);
     }

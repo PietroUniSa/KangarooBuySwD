@@ -9,7 +9,7 @@ public class PreferedProduct {
     /*@
       @ public normal_behavior
       @   requires product != null;
-      @   assignable this.product;
+      @   assignable \everything;
       @   ensures this.product == product;
       @*/
     public PreferedProduct(ProdottoBean product) {

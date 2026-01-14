@@ -1,0 +1,796 @@
+src/main/java/ita/kangaroo/dao/AddressDao.java:61: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getVia()
+      @        && address.getVia() != null && !address.getVia().isEmpty()
+                                ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:61: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getVia()
+      @        && address.getVia() != null && !address.getVia().isEmpty()
+                                                             ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:62: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getCitta()
+      @        && address.getCitta() != null && !address.getCitta().isEmpty()
+                                  ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:62: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getCitta()
+      @        && address.getCitta() != null && !address.getCitta().isEmpty()
+                                                                 ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:63: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getCAP()
+      @        && address.getCAP() != null && !address.getCAP().isEmpty()
+                                ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:63: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getCAP()
+      @        && address.getCAP() != null && !address.getCAP().isEmpty()
+                                                             ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:64: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getUsername()
+      @        && address.getUsername() != null && !address.getUsername().isEmpty();
+                                     ^
+src/main/java/ita/kangaroo/dao/AddressDao.java:64: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.AddressBean.getUsername()
+      @        && address.getUsername() != null && !address.getUsername().isEmpty();
+                                                                       ^
+src/main/java/ita/kangaroo/dao/FatturazioneDao.java:60: warning: A non-pure method is being called where it is not permitted: ita.kangaroo.model.FatturazioneBean.getData_emissione()
+      @        && invoice.getData_emissione() != null;
+                                           ^
+Proving methods in ita.kangaroo.dao.AddressDao
+Starting proof of ita.kangaroo.dao.AddressDao.AddressDao() with prover z3_4_3
+Method assertions are validated [1.46 secs]
+Completed proof of ita.kangaroo.dao.AddressDao.AddressDao() with prover z3_4_3 - no warnings [1.57 secs]
+Skipping proof of ita.kangaroo.dao.AddressDao.doDelete(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.AddressDao.doRetrieveByClient(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.AddressDao.doRetrieveByKey(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.AddressDao.doSave(ita.kangaroo.model.AddressBean) (excluded by skipesc)
+Starting proof of ita.kangaroo.dao.AddressDao.getDataSource() with prover z3_4_3
+Method assertions are validated [1.61 secs]
+Completed proof of ita.kangaroo.dao.AddressDao.getDataSource() with prover z3_4_3 - no warnings [1.65 secs]
+Starting proof of ita.kangaroo.dao.AddressDao.nn(String) with prover z3_4_3
+Method assertions are validated [1.42 secs]
+Completed proof of ita.kangaroo.dao.AddressDao.nn(String) with prover z3_4_3 - no warnings [1.45 secs]
+Completed proving methods in ita.kangaroo.dao.AddressDao [4.69 secs]
+Proving methods in ita.kangaroo.model.AddressBean
+Starting proof of ita.kangaroo.model.AddressBean.AddressBean() with prover z3_4_3
+Method assertions are validated [1.46 secs]
+Completed proof of ita.kangaroo.model.AddressBean.AddressBean() with prover z3_4_3 - no warnings [1.54 secs]
+Starting proof of ita.kangaroo.model.AddressBean.AddressBean(int,String,String,String,String) with prover z3_4_3
+Method assertions are validated [1.25 secs]
+Completed proof of ita.kangaroo.model.AddressBean.AddressBean(int,String,String,String,String) with prover z3_4_3 - no warnings [1.28 secs]
+Skipping proof of ita.kangaroo.model.AddressBean.equals(Object) (excluded by skipesc)
+Starting proof of ita.kangaroo.model.AddressBean.getCAP() with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.AddressBean.getCAP() with prover z3_4_3 - no warnings [1.23 secs]
+Starting proof of ita.kangaroo.model.AddressBean.getCitta() with prover z3_4_3
+Method assertions are validated [4.11 secs]
+Completed proof of ita.kangaroo.model.AddressBean.getCitta() with prover z3_4_3 - no warnings [4.13 secs]
+Starting proof of ita.kangaroo.model.AddressBean.getId() with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.AddressBean.getId() with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.AddressBean.getUsername() with prover z3_4_3
+Method assertions are validated [1.18 secs]
+Completed proof of ita.kangaroo.model.AddressBean.getUsername() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.AddressBean.getVia() with prover z3_4_3
+Method assertions are validated [1.18 secs]
+Completed proof of ita.kangaroo.model.AddressBean.getVia() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.AddressBean.isValidCAP(String) with prover z3_4_3
+Method assertions are validated [1.54 secs]
+Completed proof of ita.kangaroo.model.AddressBean.isValidCAP(String) with prover z3_4_3 - no warnings [1.57 secs]
+Starting proof of ita.kangaroo.model.AddressBean.setCAP(String) with prover z3_4_3
+Method assertions are validated [1.40 secs]
+Completed proof of ita.kangaroo.model.AddressBean.setCAP(String) with prover z3_4_3 - no warnings [1.42 secs]
+Starting proof of ita.kangaroo.model.AddressBean.setCitta(String) with prover z3_4_3
+Method assertions are validated [1.23 secs]
+Completed proof of ita.kangaroo.model.AddressBean.setCitta(String) with prover z3_4_3 - no warnings [1.25 secs]
+Starting proof of ita.kangaroo.model.AddressBean.setId(int) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.AddressBean.setId(int) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.AddressBean.setUsername(String) with prover z3_4_3
+Method assertions are validated [1.23 secs]
+Completed proof of ita.kangaroo.model.AddressBean.setUsername(String) with prover z3_4_3 - no warnings [1.24 secs]
+Starting proof of ita.kangaroo.model.AddressBean.setVia(String) with prover z3_4_3
+Method assertions are validated [1.23 secs]
+Completed proof of ita.kangaroo.model.AddressBean.setVia(String) with prover z3_4_3 - no warnings [1.24 secs]
+Completed proving methods in ita.kangaroo.model.AddressBean [19.76 secs]
+Proving methods in ita.kangaroo.dao.ComposizioneDao
+Starting proof of ita.kangaroo.dao.ComposizioneDao.ComposizioneDao() with prover z3_4_3
+Method assertions are validated [1.38 secs]
+Completed proof of ita.kangaroo.dao.ComposizioneDao.ComposizioneDao() with prover z3_4_3 - no warnings [1.40 secs]
+Skipping proof of ita.kangaroo.dao.ComposizioneDao.doRetrieveByKey(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.ComposizioneDao.doSave(ita.kangaroo.model.OrderProductBean) (excluded by skipesc)
+Starting proof of ita.kangaroo.dao.ComposizioneDao.getDataSource() with prover z3_4_3
+Method assertions are validated [1.67 secs]
+Completed proof of ita.kangaroo.dao.ComposizioneDao.getDataSource() with prover z3_4_3 - no warnings [1.70 secs]
+Completed proving methods in ita.kangaroo.dao.ComposizioneDao [3.11 secs]
+Proving methods in ita.kangaroo.model.OrderProductBean
+Starting proof of ita.kangaroo.model.OrderProductBean.OrderProductBean() with prover z3_4_3
+Method assertions are validated [1.04 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.OrderProductBean() with prover z3_4_3 - no warnings [1.05 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.getId_ordine() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.getId_ordine() with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.getId_prodotto() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.getId_prodotto() with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.getIVA() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.getIVA() with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.getPrezzo() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.getPrezzo() with prover z3_4_3 - no warnings [1.06 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.getQuantita() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.getQuantita() with prover z3_4_3 - no warnings [1.06 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.setId_ordine(int) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.setId_ordine(int) with prover z3_4_3 - no warnings [1.08 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.setId_prodotto(int) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.setId_prodotto(int) with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.setIVA(float) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.setIVA(float) with prover z3_4_3 - no warnings [1.08 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.setPrezzo(float) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.setPrezzo(float) with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.OrderProductBean.setQuantita(int) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.OrderProductBean.setQuantita(int) with prover z3_4_3 - no warnings [1.07 secs]
+Completed proving methods in ita.kangaroo.model.OrderProductBean [11.78 secs]
+Proving methods in ita.kangaroo.dao.FatturazioneDao
+Starting proof of ita.kangaroo.dao.FatturazioneDao.FatturazioneDao() with prover z3_4_3
+Method assertions are validated [1.46 secs]
+Completed proof of ita.kangaroo.dao.FatturazioneDao.FatturazioneDao() with prover z3_4_3 - no warnings [1.48 secs]
+Skipping proof of ita.kangaroo.dao.FatturazioneDao.doRetrieveByOrder(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.FatturazioneDao.doSave(ita.kangaroo.model.FatturazioneBean) (excluded by skipesc)
+Starting proof of ita.kangaroo.dao.FatturazioneDao.getDataSource() with prover z3_4_3
+Method assertions are validated [1.59 secs]
+Completed proof of ita.kangaroo.dao.FatturazioneDao.getDataSource() with prover z3_4_3 - no warnings [1.62 secs]
+Completed proving methods in ita.kangaroo.dao.FatturazioneDao [3.11 secs]
+Proving methods in ita.kangaroo.model.FatturazioneBean
+Starting proof of ita.kangaroo.model.FatturazioneBean.FatturazioneBean() with prover z3_4_3
+Method assertions are validated [1.09 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.FatturazioneBean() with prover z3_4_3 - no warnings [1.11 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getData_emissione() with prover z3_4_3
+Method assertions are validated [4.13 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getData_emissione() with prover z3_4_3 - no warnings [4.14 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getData_scadenza() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getData_scadenza() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getId() with prover z3_4_3
+Method assertions are validated [1.18 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getId() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getImporto() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getImporto() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getIva() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getIva() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getSdi() with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getSdi() with prover z3_4_3 - no warnings [1.21 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.getStato_pagamento() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.getStato_pagamento() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setData_emissione(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.22 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setData_emissione(@Nullable String) with prover z3_4_3 - no warnings [1.23 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setData_scadenza(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.22 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setData_scadenza(@Nullable String) with prover z3_4_3 - no warnings [1.23 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setId(int) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setId(int) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setImporto(float) with prover z3_4_3
+Method assertions are validated [1.22 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setImporto(float) with prover z3_4_3 - no warnings [1.23 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setIva(float) with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setIva(float) with prover z3_4_3 - no warnings [1.21 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setSdi(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setSdi(@Nullable String) with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.FatturazioneBean.setStato_pagamento(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.FatturazioneBean.setStato_pagamento(@Nullable String) with prover z3_4_3 - no warnings [1.20 secs]
+Completed proving methods in ita.kangaroo.model.FatturazioneBean [21.01 secs]
+Proving methods in ita.kangaroo.dao.MetodoPagamentoDao
+Starting proof of ita.kangaroo.dao.MetodoPagamentoDao.MetodoPagamentoDao() with prover z3_4_3
+Method assertions are validated [1.37 secs]
+Completed proof of ita.kangaroo.dao.MetodoPagamentoDao.MetodoPagamentoDao() with prover z3_4_3 - no warnings [1.39 secs]
+Skipping proof of ita.kangaroo.dao.MetodoPagamentoDao.doDelete(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.MetodoPagamentoDao.doRetrieveByClient(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.MetodoPagamentoDao.doRetrieveByKey(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.MetodoPagamentoDao.doSave(ita.kangaroo.model.MetodoPagamentoBean) (excluded by skipesc)
+Starting proof of ita.kangaroo.dao.MetodoPagamentoDao.getDataSource() with prover z3_4_3
+Method assertions are validated [1.59 secs]
+Completed proof of ita.kangaroo.dao.MetodoPagamentoDao.getDataSource() with prover z3_4_3 - no warnings [1.60 secs]
+Completed proving methods in ita.kangaroo.dao.MetodoPagamentoDao [3.00 secs]
+Proving methods in ita.kangaroo.model.MetodoPagamentoBean
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.MetodoPagamentoBean() with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.MetodoPagamentoBean() with prover z3_4_3 - no warnings [1.08 secs]
+Skipping proof of ita.kangaroo.model.MetodoPagamentoBean.equals(Object) (excluded by skipesc)
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getCircuito() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getCircuito() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getCvv() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getCvv() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getData_scadenza() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getData_scadenza() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getId() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getId() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getNumero_carta() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getNumero_carta() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.getUsername() with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.getUsername() with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setCircuito(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setCircuito(@Nullable String) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setCvv(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setCvv(@Nullable String) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setData_scadenza(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setData_scadenza(@Nullable String) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setId(int) with prover z3_4_3
+Method assertions are validated [4.13 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setId(int) with prover z3_4_3 - no warnings [4.13 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setNumero_carta(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setNumero_carta(@Nullable String) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.MetodoPagamentoBean.setUsername(@Nullable String) with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.MetodoPagamentoBean.setUsername(@Nullable String) with prover z3_4_3 - no warnings [1.21 secs]
+Completed proving methods in ita.kangaroo.model.MetodoPagamentoBean [18.53 secs]
+Proving methods in ita.kangaroo.dao.OrdineDao
+Starting proof of ita.kangaroo.dao.OrdineDao.OrdineDao() with prover z3_4_3
+Method assertions are validated [1.36 secs]
+Completed proof of ita.kangaroo.dao.OrdineDao.OrdineDao() with prover z3_4_3 - no warnings [1.38 secs]
+Skipping proof of ita.kangaroo.dao.OrdineDao.ClientDateOrders(String,String,String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.DateOrders(String,String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.doRetrieveAll() (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.doRetrieveByClient(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.doRetrieveByKey(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.doSave(ita.kangaroo.model.OrdineBean) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.getDataSource() (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.OrdineDao.lastOrder() (excluded by skipesc)
+Completed proving methods in ita.kangaroo.dao.OrdineDao [1.38 secs]
+Proving methods in ita.kangaroo.model.OrdineBean
+Starting proof of ita.kangaroo.model.OrdineBean.OrdineBean() with prover z3_4_3
+Method assertions are validated [1.25 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.OrdineBean() with prover z3_4_3 - no warnings [1.26 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.OrdineBean(java.util.ArrayList<ita.kangaroo.model.OrderProductBean>) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.OrdineBean(java.util.ArrayList<ita.kangaroo.model.OrderProductBean>) with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.OrdineBean(ita.kangaroo.model.@Nullable utenteBean) with prover z3_4_3
+Method assertions are validated [1.24 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.OrdineBean(ita.kangaroo.model.@Nullable utenteBean) with prover z3_4_3 - no warnings [1.25 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.OrdineBean(int,ita.kangaroo.model.@Nullable utenteBean,float,@Nullable String,@Nullable String,@Nullable String,@Nullable String,@Nullable String,@Nullable String,java.sql.@Nullable Date,@Nullable String) with prover z3_4_3
+Method assertions are validated [1.46 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.OrdineBean(int,ita.kangaroo.model.@Nullable utenteBean,float,@Nullable String,@Nullable String,@Nullable String,@Nullable String,@Nullable String,@Nullable String,java.sql.@Nullable Date,@Nullable String) with prover z3_4_3 - no warnings [1.48 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getCircuito() with prover z3_4_3
+Method assertions are validated [1.98 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getCircuito() with prover z3_4_3 - no warnings [2.01 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getClient() with prover z3_4_3
+Method assertions are validated [1.93 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getClient() with prover z3_4_3 - no warnings [1.96 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getData() with prover z3_4_3
+Method assertions are validated [1.96 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getData() with prover z3_4_3 - no warnings [1.99 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getDestinatario() with prover z3_4_3
+Method assertions are validated [1.95 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getDestinatario() with prover z3_4_3 - no warnings [1.98 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getId() with prover z3_4_3
+Method assertions are validated [1.91 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getId() with prover z3_4_3 - no warnings [1.93 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getIndirizzo_di_spedizione() with prover z3_4_3
+Method assertions are validated [1.91 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getIndirizzo_di_spedizione() with prover z3_4_3 - no warnings [1.94 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getMetodo_di_pagamento() with prover z3_4_3
+Method assertions are validated [1.95 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getMetodo_di_pagamento() with prover z3_4_3 - no warnings [1.97 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getMetodo_di_spedizione() with prover z3_4_3
+Method assertions are validated [1.95 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getMetodo_di_spedizione() with prover z3_4_3 - no warnings [1.97 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getNumero_carta() with prover z3_4_3
+Method assertions are validated [1.93 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getNumero_carta() with prover z3_4_3 - no warnings [1.95 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getNumero_di_tracking() with prover z3_4_3
+Method assertions are validated [1.93 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getNumero_di_tracking() with prover z3_4_3 - no warnings [1.95 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getPrezzo_totale() with prover z3_4_3
+Method assertions are validated [1.94 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getPrezzo_totale() with prover z3_4_3 - no warnings [1.97 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.getProducts() with prover z3_4_3
+Method assertions are validated [4.89 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.getProducts() with prover z3_4_3 - no warnings [4.91 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setCircuito(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.10 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setCircuito(@Nullable String) with prover z3_4_3 - no warnings [2.12 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setClient(ita.kangaroo.model.@Nullable utenteBean) with prover z3_4_3
+Method assertions are validated [2.06 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setClient(ita.kangaroo.model.@Nullable utenteBean) with prover z3_4_3 - no warnings [2.09 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setData(java.sql.@Nullable Date) with prover z3_4_3
+Method assertions are validated [2.12 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setData(java.sql.@Nullable Date) with prover z3_4_3 - no warnings [2.14 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setDestinatario(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.11 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setDestinatario(@Nullable String) with prover z3_4_3 - no warnings [2.13 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setId(int) with prover z3_4_3
+Method assertions are validated [1.96 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setId(int) with prover z3_4_3 - no warnings [1.99 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setIndirizzo_di_spedizione(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.19 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setIndirizzo_di_spedizione(@Nullable String) with prover z3_4_3 - no warnings [2.22 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setMetodo_di_pagamento(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.13 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setMetodo_di_pagamento(@Nullable String) with prover z3_4_3 - no warnings [2.15 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setMetodo_di_spedizione(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.10 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setMetodo_di_spedizione(@Nullable String) with prover z3_4_3 - no warnings [2.14 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setNumero_carta(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.15 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setNumero_carta(@Nullable String) with prover z3_4_3 - no warnings [2.18 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setNumero_di_tracking(@Nullable String) with prover z3_4_3
+Method assertions are validated [2.11 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setNumero_di_tracking(@Nullable String) with prover z3_4_3 - no warnings [2.13 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setPrezzo_totale(float) with prover z3_4_3
+Method assertions are validated [1.97 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setPrezzo_totale(float) with prover z3_4_3 - no warnings [2.00 secs]
+Starting proof of ita.kangaroo.model.OrdineBean.setProducts(java.util.ArrayList<ita.kangaroo.model.OrderProductBean>) with prover z3_4_3
+Method assertions are validated [1.95 secs]
+Completed proof of ita.kangaroo.model.OrdineBean.setProducts(java.util.ArrayList<ita.kangaroo.model.OrderProductBean>) with prover z3_4_3 - no warnings [1.97 secs]
+Skipping proof of ita.kangaroo.model.OrdineBean.toString() (excluded by skipesc)
+Completed proving methods in ita.kangaroo.model.OrdineBean [57.07 secs]
+Proving methods in ita.kangaroo.model.utenteBean
+Starting proof of ita.kangaroo.model.utenteBean.utenteBean() with prover z3_4_3
+Method assertions are validated [1.15 secs]
+Completed proof of ita.kangaroo.model.utenteBean.utenteBean() with prover z3_4_3 - no warnings [1.16 secs]
+Starting proof of ita.kangaroo.model.utenteBean.utenteBean(String,String,String,String,String,ita.kangaroo.model.tipo,String,String,String,String,String) with prover z3_4_3
+Method assertions are validated [1.28 secs]
+Completed proof of ita.kangaroo.model.utenteBean.utenteBean(String,String,String,String,String,ita.kangaroo.model.tipo,String,String,String,String,String) with prover z3_4_3 - no warnings [1.31 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getCap() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getCap() with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getCitta() with prover z3_4_3
+Method assertions are validated [4.33 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getCitta() with prover z3_4_3 - no warnings [4.37 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getCognome() with prover z3_4_3
+Method assertions are validated [1.40 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getCognome() with prover z3_4_3 - no warnings [1.44 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getEmail() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getEmail() with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getNome() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getNome() with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getPassword() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getPassword() with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getProvincia() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getProvincia() with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getTelefono() with prover z3_4_3
+Method assertions are validated [1.47 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getTelefono() with prover z3_4_3 - no warnings [1.51 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getTipo() with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getTipo() with prover z3_4_3 - no warnings [1.42 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getUsername() with prover z3_4_3
+Method assertions are validated [1.38 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getUsername() with prover z3_4_3 - no warnings [1.42 secs]
+Starting proof of ita.kangaroo.model.utenteBean.getVia() with prover z3_4_3
+Method assertions are validated [1.37 secs]
+Completed proof of ita.kangaroo.model.utenteBean.getVia() with prover z3_4_3 - no warnings [1.42 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setCap(String) with prover z3_4_3
+Method assertions are validated [1.42 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setCap(String) with prover z3_4_3 - no warnings [1.45 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setCitta(String) with prover z3_4_3
+Method assertions are validated [1.40 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setCitta(String) with prover z3_4_3 - no warnings [1.47 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setCognome(String) with prover z3_4_3
+Method assertions are validated [1.42 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setCognome(String) with prover z3_4_3 - no warnings [1.52 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setEmail(String) with prover z3_4_3
+Method assertions are validated [1.42 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setEmail(String) with prover z3_4_3 - no warnings [1.50 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setNome(String) with prover z3_4_3
+Method assertions are validated [1.41 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setNome(String) with prover z3_4_3 - no warnings [1.48 secs]
+Skipping proof of ita.kangaroo.model.utenteBean.setPassword(String) (excluded by skipesc)
+Starting proof of ita.kangaroo.model.utenteBean.setProvincia(String) with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setProvincia(String) with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setTelefono(String) with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setTelefono(String) with prover z3_4_3 - no warnings [1.41 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setTipo(ita.kangaroo.model.tipo) with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setTipo(ita.kangaroo.model.tipo) with prover z3_4_3 - no warnings [1.41 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setUsername(String) with prover z3_4_3
+Method assertions are validated [1.41 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setUsername(String) with prover z3_4_3 - no warnings [1.43 secs]
+Starting proof of ita.kangaroo.model.utenteBean.setVia(String) with prover z3_4_3
+Method assertions are validated [1.39 secs]
+Completed proof of ita.kangaroo.model.utenteBean.setVia(String) with prover z3_4_3 - no warnings [1.42 secs]
+Completed proving methods in ita.kangaroo.model.utenteBean [35.76 secs]
+Proving methods in ita.kangaroo.model.tipo
+Starting proof of ita.kangaroo.model.tipo.tipo() with prover z3_4_3
+Method assertions are validated [1.14 secs]
+Completed proof of ita.kangaroo.model.tipo.tipo() with prover z3_4_3 - no warnings [1.15 secs]
+Completed proving methods in ita.kangaroo.model.tipo [1.16 secs]
+Proving methods in ita.kangaroo.dao.prodottoDao
+Starting proof of ita.kangaroo.dao.prodottoDao.prodottoDao() with prover z3_4_3
+Method assertions are validated [1.35 secs]
+Completed proof of ita.kangaroo.dao.prodottoDao.prodottoDao() with prover z3_4_3 - no warnings [1.36 secs]
+Skipping proof of ita.kangaroo.dao.prodottoDao.doDelete(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doModify(ita.kangaroo.model.ProdottoBean) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveAll() (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveAllByCategory(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveAllByKeyword(String,String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveAllByName(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveAllLimit() (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doRetrieveByKey(int) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.doSave(ita.kangaroo.model.ProdottoBean) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.prodottoDao.updateQuantity(int,int) (excluded by skipesc)
+Completed proving methods in ita.kangaroo.dao.prodottoDao [1.36 secs]
+Proving methods in ita.kangaroo.model.ProdottoBean
+Starting proof of ita.kangaroo.model.ProdottoBean.ProdottoBean() with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.ProdottoBean() with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.ProdottoBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo) with prover z3_4_3
+Method assertions are validated [4.18 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.ProdottoBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo) with prover z3_4_3 - no warnings [4.20 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getDescrizione() with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getDescrizione() with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getId() with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getId() with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getImmagine() with prover z3_4_3
+Method assertions are validated [1.28 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getImmagine() with prover z3_4_3 - no warnings [1.29 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getIva() with prover z3_4_3
+Method assertions are validated [1.28 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getIva() with prover z3_4_3 - no warnings [1.29 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getNome() with prover z3_4_3
+Method assertions are validated [1.34 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getNome() with prover z3_4_3 - no warnings [1.35 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getPrezzo() with prover z3_4_3
+Method assertions are validated [1.30 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getPrezzo() with prover z3_4_3 - no warnings [1.32 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getQuantita() with prover z3_4_3
+Method assertions are validated [1.30 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getQuantita() with prover z3_4_3 - no warnings [1.31 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.getTipo() with prover z3_4_3
+Method assertions are validated [1.33 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.getTipo() with prover z3_4_3 - no warnings [1.35 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setDescrizione(String) with prover z3_4_3
+Method assertions are validated [1.31 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setDescrizione(String) with prover z3_4_3 - no warnings [1.33 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setId(int) with prover z3_4_3
+Method assertions are validated [1.28 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setId(int) with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setImmagine(String) with prover z3_4_3
+Method assertions are validated [1.32 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setImmagine(String) with prover z3_4_3 - no warnings [1.33 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setIva(float) with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setIva(float) with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setNome(String) with prover z3_4_3
+Method assertions are validated [1.30 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setNome(String) with prover z3_4_3 - no warnings [1.31 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setPrezzo(float) with prover z3_4_3
+Method assertions are validated [1.28 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setPrezzo(float) with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setQuantita(int) with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setQuantita(int) with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.ProdottoBean.setTipo(ita.kangaroo.model.tipo) with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.ProdottoBean.setTipo(ita.kangaroo.model.tipo) with prover z3_4_3 - no warnings [1.30 secs]
+Completed proving methods in ita.kangaroo.model.ProdottoBean [26.44 secs]
+Proving methods in ita.kangaroo.dao.utenteDao
+Starting proof of ita.kangaroo.dao.utenteDao.utenteDao() with prover z3_4_3
+Method assertions are validated [1.36 secs]
+Completed proof of ita.kangaroo.dao.utenteDao.utenteDao() with prover z3_4_3 - no warnings [1.37 secs]
+Skipping proof of ita.kangaroo.dao.utenteDao.doModify(ita.kangaroo.model.utenteBean) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.doRetrieveAll() (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.doRetrieveByEmail(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.doRetrieveByEmailAndPassword(String,String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.doRetrieveByKey(String) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.doSave(ita.kangaroo.model.utenteBean) (excluded by skipesc)
+Skipping proof of ita.kangaroo.dao.utenteDao.getDataSource() (excluded by skipesc)
+Completed proving methods in ita.kangaroo.dao.utenteDao [1.37 secs]
+Proving methods in ita.kangaroo.model.AccessorioBean
+Starting proof of ita.kangaroo.model.AccessorioBean.AccessorioBean(int,String,String,ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+Method assertions are validated [1.15 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.AccessorioBean(int,String,String,ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - no warnings [1.16 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.getColore() with prover z3_4_3
+Method assertions are validated [1.18 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.getColore() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.getId() with prover z3_4_3
+Method assertions are validated [1.16 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.getId() with prover z3_4_3 - no warnings [1.17 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.getProdottoId() with prover z3_4_3
+Method assertions are validated [1.29 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.getProdottoId() with prover z3_4_3 - no warnings [1.30 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.getTaglia() with prover z3_4_3
+Method assertions are validated [1.18 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.getTaglia() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.setColore(String) with prover z3_4_3
+Method assertions are validated [1.24 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.setColore(String) with prover z3_4_3 - no warnings [1.25 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.setId(int) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.setId(int) with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.setProdottoId(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+Method assertions are validated [4.16 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.setProdottoId(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - no warnings [4.17 secs]
+Starting proof of ita.kangaroo.model.AccessorioBean.setTaglia(String) with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.AccessorioBean.setTaglia(String) with prover z3_4_3 - no warnings [1.24 secs]
+Completed proving methods in ita.kangaroo.model.AccessorioBean [13.89 secs]
+Proving methods in ita.kangaroo.model.Cart
+Starting proof of ita.kangaroo.model.Cart.Cart() with prover z3_4_3
+Method assertions are validated [1.06 secs]
+Completed proof of ita.kangaroo.model.Cart.Cart() with prover z3_4_3 - no warnings [1.07 secs]
+Starting proof of ita.kangaroo.model.Cart.addProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+ita.kangaroo.model.Cart.addProduct Method assertions are INVALID
+src/main/java/ita/kangaroo/model/Cart.java:37: verify: The prover cannot establish an assertion (PossiblyNegativeIndex) in method addProduct
+            CartProduct cp = products[i];
+                                     ^
+src/main/java/ita/kangaroo/model/Cart.java:54: verify: The prover cannot establish an assertion (PossiblyTooLargeIndex) in method addProduct
+        products[size] = new CartProduct(product);
+                ^
+src/main/java/ita/kangaroo/model/Cart.java:41: verify: The prover cannot establish an assertion (ArithmeticOperationRange) in method addProduct: overflow in int sum
+                    int newq = cp.getQuantity() + 1;
+                                                ^
+src/main/java/ita/kangaroo/model/Cart.java:43: verify: The prover cannot establish an assertion (Precondition: src/main/java/ita/kangaroo/model/CartProduct.java:42:) in method addProduct
+                    cp.setQuantity(newq);
+                                  ^
+src/main/java/ita/kangaroo/model/CartProduct.java:42: verify: Associated declaration: src/main/java/ita/kangaroo/model/Cart.java:43:
+    public void setQuantity(int q) {
+                ^
+src/main/java/ita/kangaroo/model/CartProduct.java:38: verify: Precondition conjunct is false: q > 0
+      @   requires q > 0;
+                     ^
+src/main/java/ita/kangaroo/model/Cart.java:54: verify: The prover cannot establish an assertion (PossiblyBadArrayAssignment) in method addProduct
+        products[size] = new CartProduct(product);
+                       ^
+src/main/java/ita/kangaroo/model/Cart.java:55: verify: The prover cannot establish an assertion (ArithmeticOperationRange) in method addProduct: overflow in int sum
+        size = size + 1;
+                    ^
+src/main/java/ita/kangaroo/model/Cart.java:33: verify: The prover cannot establish an assertion (InvariantExit: src/main/java/ita/kangaroo/model/Cart.java:13:) in method addProduct
+    public void addProduct(ProdottoBean product) {
+                ^
+src/main/java/ita/kangaroo/model/Cart.java:13: verify: Associated declaration: src/main/java/ita/kangaroo/model/Cart.java:33:
+      @ public invariant 0 <= size && size <= products.length;
+               ^
+src/main/java/ita/kangaroo/model/Cart.java:8: verify: The prover cannot establish an assertion (NullField) in method addProduct
+    /*@ spec_public @*/ private CartProduct[] products = new CartProduct[10];
+                                              ^
+src/main/java/ita/kangaroo/model/Cart.java:51: verify: The prover cannot establish an assertion (ArithmeticOperationRange) in method addProduct: int multiply overflow
+            products = Arrays.copyOf(products, products.length * 2);
+                                                               ^
+src/main/java/ita/kangaroo/model/Cart.java:51: verify: The prover cannot establish an assertion (Precondition: /home/renato/tools/openjml/specs/java/util/Arrays.jml:1950:) in method addProduct
+            products = Arrays.copyOf(products, products.length * 2);
+                                    ^
+/home/renato/tools/openjml/specs/java/util/Arrays.jml:1950: verify: Associated declaration: src/main/java/ita/kangaroo/model/Cart.java:51:
+    public static <T> T[] copyOf(T /*@ nullable @*/ [] original, int newLength);
+                          ^
+/home/renato/tools/openjml/specs/java/util/Arrays.jml:1940: verify: Precondition conjunct is false: newLength >= 0
+    //@   requires newLength >= 0;
+                             ^
+Completed proof of ita.kangaroo.model.Cart.addProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - with warnings [3.37 secs]
+Starting proof of ita.kangaroo.model.Cart.changeQuantity(ita.kangaroo.model.ProdottoBean,int) with prover z3_4_3
+ita.kangaroo.model.Cart.changeQuantity Method assertions are INVALID
+src/main/java/ita/kangaroo/model/Cart.java:69: verify: The prover cannot establish an assertion (PossiblyNegativeIndex) in method changeQuantity
+            CartProduct c = products[i];
+                                    ^
+Completed proof of ita.kangaroo.model.Cart.changeQuantity(ita.kangaroo.model.ProdottoBean,int) with prover z3_4_3 - with warnings [1.39 secs]
+Starting proof of ita.kangaroo.model.Cart.getProducts() with prover z3_4_3
+ita.kangaroo.model.Cart.getProducts Method assertions are INVALID
+src/main/java/ita/kangaroo/model/Cart.java:118: verify: The prover cannot establish an assertion (PossiblyNegativeIndex) in method getProducts
+            if (products[i] != null) list.add(products[i]);
+                        ^
+Completed proof of ita.kangaroo.model.Cart.getProducts() with prover z3_4_3 - with warnings [1.52 secs]
+Starting proof of ita.kangaroo.model.Cart.removeProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+ita.kangaroo.model.Cart.removeProduct Method assertions are INVALID
+src/main/java/ita/kangaroo/model/Cart.java:91: verify: The prover cannot establish an assertion (PossiblyTooLargeIndex) in method removeProduct
+            CartProduct c = products[i];
+                                    ^
+src/main/java/ita/kangaroo/model/Cart.java:91: verify: The prover cannot establish an assertion (PossiblyNegativeIndex) in method removeProduct
+            CartProduct c = products[i];
+                                    ^
+src/main/java/ita/kangaroo/model/Cart.java:88: verify: The prover cannot establish an assertion (InvariantExit: src/main/java/ita/kangaroo/model/Cart.java:13:) in method removeProduct
+    public void removeProduct(ProdottoBean product) {
+                ^
+src/main/java/ita/kangaroo/model/Cart.java:13: verify: Associated declaration: src/main/java/ita/kangaroo/model/Cart.java:88:
+      @ public invariant 0 <= size && size <= products.length;
+               ^
+src/main/java/ita/kangaroo/model/Cart.java:98: verify: The prover cannot establish an assertion (PossiblyNegativeIndex) in method removeProduct
+                        products[j] = products[j + 1];
+                                ^
+src/main/java/ita/kangaroo/model/Cart.java:98: verify: The prover cannot establish an assertion (PossiblyTooLargeIndex) in method removeProduct
+                        products[j] = products[j + 1];
+                                              ^
+src/main/java/ita/kangaroo/model/Cart.java:102: verify: The prover cannot establish an assertion (PossiblyNullAssignment) in method removeProduct
+                    products[size] = null;
+                                   ^
+src/main/java/ita/kangaroo/model/Cart.java:98: verify: The prover cannot establish an assertion (PossiblyTooLargeIndex) in method removeProduct
+                        products[j] = products[j + 1];
+                                ^
+src/main/java/ita/kangaroo/model/Cart.java:102: verify: The prover cannot establish an assertion (PossiblyTooLargeIndex) in method removeProduct
+                    products[size] = null;
+                            ^
+Completed proof of ita.kangaroo.model.Cart.removeProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - with warnings [2.96 secs]
+Completed proving methods in ita.kangaroo.model.Cart [10.31 secs]
+Proving methods in ita.kangaroo.model.CartProduct
+Starting proof of ita.kangaroo.model.CartProduct.CartProduct(ita.kangaroo.model.ProdottoBean,int) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.CartProduct.CartProduct(ita.kangaroo.model.ProdottoBean,int) with prover z3_4_3 - no warnings [1.08 secs]
+Starting proof of ita.kangaroo.model.CartProduct.CartProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.CartProduct.CartProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - no warnings [1.08 secs]
+Starting proof of ita.kangaroo.model.CartProduct.getProduct() with prover z3_4_3
+Method assertions are validated [1.10 secs]
+Completed proof of ita.kangaroo.model.CartProduct.getProduct() with prover z3_4_3 - no warnings [1.10 secs]
+Starting proof of ita.kangaroo.model.CartProduct.getQuantity() with prover z3_4_3
+Method assertions are validated [1.09 secs]
+Completed proof of ita.kangaroo.model.CartProduct.getQuantity() with prover z3_4_3 - no warnings [1.10 secs]
+Starting proof of ita.kangaroo.model.CartProduct.setQuantity(int) with prover z3_4_3
+Method assertions are validated [1.10 secs]
+Completed proof of ita.kangaroo.model.CartProduct.setQuantity(int) with prover z3_4_3 - no warnings [1.11 secs]
+Completed proving methods in ita.kangaroo.model.CartProduct [5.47 secs]
+Proving methods in ita.kangaroo.model.Prefered
+Starting proof of ita.kangaroo.model.Prefered.Prefered() with prover z3_4_3
+Method assertions are validated [1.17 secs]
+Completed proof of ita.kangaroo.model.Prefered.Prefered() with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.Prefered.addPreferito(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+ita.kangaroo.model.Prefered.addPreferito Method assertions are INVALID
+src/main/java/ita/kangaroo/model/Prefered.java:8: verify: The prover cannot establish an assertion (NullField) in method addPreferito
+    private ArrayList<PreferedProduct> products = new ArrayList<PreferedProduct>();
+                                       ^
+Completed proof of ita.kangaroo.model.Prefered.addPreferito(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - with warnings [1.98 secs]
+Starting proof of ita.kangaroo.model.Prefered.getProducts() with prover z3_4_3
+Method assertions are validated [1.21 secs]
+Completed proof of ita.kangaroo.model.Prefered.getProducts() with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.Prefered.removePreferito(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+Method assertions are validated [1.57 secs]
+Completed proof of ita.kangaroo.model.Prefered.removePreferito(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - no warnings [1.60 secs]
+Completed proving methods in ita.kangaroo.model.Prefered [5.99 secs]
+Proving methods in ita.kangaroo.model.PreferedProduct
+Starting proof of ita.kangaroo.model.PreferedProduct.PreferedProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3
+Method assertions are validated [1.07 secs]
+Completed proof of ita.kangaroo.model.PreferedProduct.PreferedProduct(ita.kangaroo.model.ProdottoBean) with prover z3_4_3 - no warnings [1.08 secs]
+Starting proof of ita.kangaroo.model.PreferedProduct.getProduct() with prover z3_4_3
+Method assertions are validated [1.09 secs]
+Completed proof of ita.kangaroo.model.PreferedProduct.getProduct() with prover z3_4_3 - no warnings [1.10 secs]
+Completed proving methods in ita.kangaroo.model.PreferedProduct [2.18 secs]
+Proving methods in ita.kangaroo.model.animaleBean
+Starting proof of ita.kangaroo.model.animaleBean.animaleBean() with prover z3_4_3
+ita.kangaroo.model.animaleBean.animaleBean Method assertions are INVALID
+src/main/java/ita/kangaroo/model/animaleBean.java:22: verify: The prover cannot establish an assertion (ExceptionalPostcondition: src/main/java/ita/kangaroo/model/animaleBean.java:18:) in method animaleBean
+        super();
+             ^
+src/main/java/ita/kangaroo/model/animaleBean.java:18: verify: Associated declaration: src/main/java/ita/kangaroo/model/animaleBean.java:22:
+      @ public normal_behavior
+               ^
+Completed proof of ita.kangaroo.model.animaleBean.animaleBean() with prover z3_4_3 - with warnings [1.24 secs]
+Starting proof of ita.kangaroo.model.animaleBean.animaleBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,String,int,double,String) with prover z3_4_3
+ita.kangaroo.model.animaleBean.animaleBean Method assertions are INVALID
+src/main/java/ita/kangaroo/model/animaleBean.java:49: verify: The prover cannot establish an assertion (Precondition: src/main/java/ita/kangaroo/model/ProdottoBean.java:76:) in method animaleBean
+        super(id, descrizione, nome, immagine, prezzo, quantita, iva, tipo);
+             ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:76: verify: Associated declaration: src/main/java/ita/kangaroo/model/animaleBean.java:49:
+    public ProdottoBean(int id, String descrizione, String nome, String immagine,
+           ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:57: verify: Precondition conjunct is false: id >= 0
+      requires id >= 0;
+                  ^
+src/main/java/ita/kangaroo/model/animaleBean.java:49: verify: The prover cannot establish an assertion (ExceptionalPostcondition: src/main/java/ita/kangaroo/model/animaleBean.java:31:) in method animaleBean
+        super(id, descrizione, nome, immagine, prezzo, quantita, iva, tipo);
+             ^
+src/main/java/ita/kangaroo/model/animaleBean.java:31: verify: Associated declaration: src/main/java/ita/kangaroo/model/animaleBean.java:49:
+      @ public normal_behavior
+               ^
+src/main/java/ita/kangaroo/model/animaleBean.java:47: verify: The prover cannot establish an assertion (InvariantExit: /home/renato/tools/openjml/specs/java/lang/CharSequence.jml:30:) in method animaleBean: ita.kangaroo.model.animaleBean.animaleBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,String,int,double,String) (parameter sesso)
+            int id1, String continente, int eta, double peso, String sesso) {
+                                                                     ^
+/home/renato/tools/openjml/specs/java/lang/CharSequence.jml:30: verify: Associated declaration: src/main/java/ita/kangaroo/model/animaleBean.java:47:
+	//-RAC@ public invariant charArray != null; // FIXME - why this when there is a non_null declaration
+	               ^
+src/main/java/ita/kangaroo/model/animaleBean.java:47: verify: The prover cannot establish an assertion (InvariantExit: /home/renato/tools/openjml/specs/java/lang/CharSequence.jml:30:) in method animaleBean: ita.kangaroo.model.animaleBean.animaleBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,String,int,double,String) (parameter continente)
+            int id1, String continente, int eta, double peso, String sesso) {
+                            ^
+/home/renato/tools/openjml/specs/java/lang/CharSequence.jml:30: verify: Associated declaration: src/main/java/ita/kangaroo/model/animaleBean.java:47:
+	//-RAC@ public invariant charArray != null; // FIXME - why this when there is a non_null declaration
+	               ^
+Completed proof of ita.kangaroo.model.animaleBean.animaleBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,String,int,double,String) with prover z3_4_3 - with warnings [2.56 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getContinente() with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getContinente() with prover z3_4_3 - no warnings [1.22 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getEta() with prover z3_4_3
+Method assertions are validated [4.09 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getEta() with prover z3_4_3 - no warnings [4.10 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getId() with prover z3_4_3
+Method assertions are validated [1.17 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getId() with prover z3_4_3 - no warnings [1.18 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getId1() with prover z3_4_3
+Method assertions are validated [1.20 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getId1() with prover z3_4_3 - no warnings [1.21 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getPeso() with prover z3_4_3
+Method assertions are validated [1.16 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getPeso() with prover z3_4_3 - no warnings [1.17 secs]
+Starting proof of ita.kangaroo.model.animaleBean.getSesso() with prover z3_4_3
+Method assertions are validated [1.17 secs]
+Completed proof of ita.kangaroo.model.animaleBean.getSesso() with prover z3_4_3 - no warnings [1.18 secs]
+Starting proof of ita.kangaroo.model.animaleBean.setContinente(String) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.animaleBean.setContinente(String) with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.animaleBean.setEta(int) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.animaleBean.setEta(int) with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.animaleBean.setId1(int) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.animaleBean.setId1(int) with prover z3_4_3 - no warnings [1.19 secs]
+Starting proof of ita.kangaroo.model.animaleBean.setPeso(double) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.animaleBean.setPeso(double) with prover z3_4_3 - no warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.animaleBean.setSesso(String) with prover z3_4_3
+Method assertions are validated [1.19 secs]
+Completed proof of ita.kangaroo.model.animaleBean.setSesso(String) with prover z3_4_3 - no warnings [1.20 secs]
+Completed proving methods in ita.kangaroo.model.animaleBean [19.88 secs]
+Proving methods in ita.kangaroo.model.ciboBean
+Starting proof of ita.kangaroo.model.ciboBean.ciboBean(int,double) with prover z3_4_3
+Method assertions are validated [1.12 secs]
+Completed proof of ita.kangaroo.model.ciboBean.ciboBean(int,double) with prover z3_4_3 - no warnings [1.12 secs]
+Starting proof of ita.kangaroo.model.ciboBean.ciboBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,double) with prover z3_4_3
+ita.kangaroo.model.ciboBean.ciboBean Method assertions are INVALID
+src/main/java/ita/kangaroo/model/ciboBean.java:13: verify: The prover cannot establish an assertion (Precondition: src/main/java/ita/kangaroo/model/ProdottoBean.java:76:) in method ciboBean
+        super(id, descrizione, nome,immagine, prezzo, quantita, iva, tipo);
+             ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:76: verify: Associated declaration: src/main/java/ita/kangaroo/model/ciboBean.java:13:
+    public ProdottoBean(int id, String descrizione, String nome, String immagine,
+           ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:57: verify: Precondition conjunct is false: id >= 0
+      requires id >= 0;
+                  ^
+Completed proof of ita.kangaroo.model.ciboBean.ciboBean(int,String,String,String,float,int,float,ita.kangaroo.model.tipo,int,double) with prover z3_4_3 - with warnings [1.41 secs]
+Starting proof of ita.kangaroo.model.ciboBean.getId() with prover z3_4_3
+Method assertions are validated [1.10 secs]
+Completed proof of ita.kangaroo.model.ciboBean.getId() with prover z3_4_3 - no warnings [1.11 secs]
+Starting proof of ita.kangaroo.model.ciboBean.getPeso() with prover z3_4_3
+Method assertions are validated [1.10 secs]
+Completed proof of ita.kangaroo.model.ciboBean.getPeso() with prover z3_4_3 - no warnings [1.10 secs]
+Starting proof of ita.kangaroo.model.ciboBean.setId(int) with prover z3_4_3
+ita.kangaroo.model.ciboBean.setId Method assertions are INVALID
+src/main/java/ita/kangaroo/model/ciboBean.java:24: verify: The prover cannot establish an assertion (Postcondition: src/main/java/ita/kangaroo/model/ProdottoBean.java:99:) in method setId
+    public void setId(int id) {
+                ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:99: verify: Associated declaration: src/main/java/ita/kangaroo/model/ciboBean.java:24:
+      ensures this.id == id;
+      ^
+src/main/java/ita/kangaroo/model/ciboBean.java:25: verify: The prover cannot establish an assertion (Assignable: src/main/java/ita/kangaroo/model/ProdottoBean.java:100:) in method setId: this.id
+        this.id = id;
+                ^
+src/main/java/ita/kangaroo/model/ProdottoBean.java:100: verify: Associated declaration: src/main/java/ita/kangaroo/model/ciboBean.java:25:
+      assignable this.id;
+      ^
+Completed proof of ita.kangaroo.model.ciboBean.setId(int) with prover z3_4_3 - with warnings [1.20 secs]
+Starting proof of ita.kangaroo.model.ciboBean.setPeso(double) with prover z3_4_3
+Method assertions are validated [1.11 secs]
+Completed proof of ita.kangaroo.model.ciboBean.setPeso(double) with prover z3_4_3 - no warnings [1.12 secs]
+Completed proving methods in ita.kangaroo.model.ciboBean [7.07 secs]
+Summary:
+  Valid:        169
+  Invalid:      9
+  Infeasible:   0
+  Timeout:      0
+  Error:        0
+  Skipped:      41
+ TOTAL METHODS: 219
+ Classes:       7 proved of 22
+ Model Classes: 0
+ Model methods: 0 proved of 0
+ DURATION:        277.5 secs
+
+9 warnings
+45 verification failures

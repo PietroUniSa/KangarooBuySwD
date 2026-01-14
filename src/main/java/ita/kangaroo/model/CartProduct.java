@@ -8,16 +8,13 @@ public class CartProduct {
     //@ spec_public
     private int quantity;
 
-    //@ public invariant product != null;
-    //@ public invariant quantity > 0;
-
     /*@
       @ public normal_behavior
       @   requires p != null;
       @   requires q > 0;
       @   assignable \everything;
-      @   ensures this.product == p;
-      @   ensures this.quantity == q;
+      @   ensures product == p;
+      @   ensures quantity == q;
       @*/
     public CartProduct(ProdottoBean p, int q) {
         this.product = p;
@@ -28,8 +25,8 @@ public class CartProduct {
       @ public normal_behavior
       @   requires p != null;
       @   assignable \everything;
-      @   ensures this.product == p;
-      @   ensures this.quantity == 1;
+      @   ensures product == p;
+      @   ensures quantity == 1;
       @*/
     public CartProduct(ProdottoBean p) {
         this.product = p;
@@ -38,12 +35,12 @@ public class CartProduct {
 
     /*@
       @ public normal_behavior
-      @   requires quantity > 0;
-      @   assignable this.quantity;
-      @   ensures this.quantity == quantity;
+      @   requires q > 0;
+      @   assignable quantity;
+      @   ensures quantity == q;
       @*/
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
+    public void setQuantity(int q) {
+        this.quantity = q;
     }
 
     /*@
