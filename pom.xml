@@ -15,11 +15,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <junit.jupiter.version>5.10.1</junit.jupiter.version>
+        <mockito.version>5.7.0</mockito.version>
+        <pitest.version>1.22.0</pitest.version>
     </properties>
 
     <dependencies>
 
-        <!-- Jakarta Servlet API (Tomcat 10.1) -->
+        <!-- Jakarta Servlet API -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
@@ -27,6 +30,7 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- MySQL -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -40,15 +44,15 @@
             <version>2.11.0</version>
         </dependency>
 
-        <!-- JUnit 5 (Jupiter) - Framework di testing moderno -->
+        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.10.1</version>
+            <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ JUnit 4 - necessario per compilare i test generati da Randoop (org.junit.*) -->
+        <!-- JUnit 4 (per test Randoop) -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -56,31 +60,31 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ JUnit Vintage Engine - per eseguire test JUnit 4 con JUnit 5/Surefire -->
+        <!-- JUnit Vintage Engine -->
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
-            <version>5.10.1</version>
+            <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito per i mock objects -->
+        <!-- Mockito -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.7.0</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Estensione Mockito per JUnit 5 -->
+        <!-- Mockito + JUnit 5 -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.7.0</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- AssertJ per assertion più leggibili (opzionale ma utile) -->
+        <!-- AssertJ -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
@@ -99,6 +103,10 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
             </plugin>
 
             <!-- WAR -->
@@ -110,23 +118,23 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin per eseguire i test -->
+            <!-- Surefire (JUnit 4 + 5) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.2</version>
                 <configuration>
+                    <useModulePath>false</useModulePath>
                     <includes>
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
-                        <include>**/*Test*.java</include>
                         <include>**/RegressionTest*.java</include>
                         <include>**/ErrorTest*.java</include>
                     </includes>
-                    <!-- ✅ Aggiungi questa riga per JaCoCo -->
-                    <argLine>@{argLine} -Xmx1024m</argLine>
                 </configuration>
             </plugin>
+
+            <!-- JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -147,6 +155,42 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- PIT Mutation Testing (JUnit 5 ENABLED) -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>${pitest.version}</version>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.1</version>
+                    </dependency>
+                </dependencies>
+
+                <configuration>
+                    <targetClasses>
+                        <param>ita.kangaroo.*</param>
+                        <param>ita.kangaroo.*.*</param>
+                        <param>ita.kangaroo.*.*.*</param>
+                    </targetClasses>
+
+                    <targetTests>
+                        <param>ita.kangaroo.*</param>
+                        <param>ita.kangaroo.*.*</param>
+                        <param>ita.kangaroo.*.*.*</param>
+                    </targetTests>
+
+                    <threads>4</threads>
+                    <outputFormats>
+                        <param>HTML</param>
+                        <param>XML</param>
+                    </outputFormats>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 

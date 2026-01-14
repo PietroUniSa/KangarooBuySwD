@@ -1,6 +1,5 @@
 package ita.kangaroo.controller;
 
-
 import ita.kangaroo.dao.prodottoDao;
 import ita.kangaroo.model.ProdottoBean;
 import jakarta.servlet.RequestDispatcher;
@@ -14,49 +13,58 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 @WebServlet("/DettagliS")
 public class DettagliS extends HttpServlet {
 
-        private static final Logger LOGGER = Logger.getLogger(DettagliS.class.getName() );
+    // ✅ iniettabile dai test (come hai fatto con altri servlet)
+    static prodottoDao model = new prodottoDao();
 
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-            //viene preso un prodotto in base al suo id, preso come parametro della request
-            prodottoDao model = new prodottoDao();
+    private static final Logger LOGGER = Logger.getLogger(DettagliS.class.getName());
 
-            String id = request.getParameter("id");
-            if (id == null || Integer.parseInt(id)==0){
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        String id = request.getParameter("id");
+        int pid;
+
+        try {
+            if (id == null) {
                 response.sendRedirect("GestioneCatalogo");
                 return;
             }
-
-            ProdottoBean p = new ProdottoBean();
-
-            try {
-                p = model.doRetrieveByKey(Integer.parseInt(id));
-            } catch (NumberFormatException e) {
-                LOGGER.log( Level.SEVERE, e.toString(), e );
-                response.sendRedirect("./ErrorPage/generalError.jsp");
-                return;
-            } catch (SQLException e) {
-                LOGGER.log( Level.SEVERE, e.toString(), e );
-                response.sendRedirect("./ErrorPage/generalError.jsp");
+            pid = Integer.parseInt(id);
+            if (pid == 0) {
+                response.sendRedirect("GestioneCatalogo");
                 return;
             }
-
-            if (p.getQuantita() <= 0) { //se il prodotto ha la quantità settata a 0 allora viene settato un attributo apposito
-
-                request.setAttribute("erroresoldout2", "Siamo spiacenti ma questo prodotto e' terminato");
-            }
-
-            request.setAttribute("detailed", p);
-
-            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/details.jsp");//dispatch alla pagina dedicata
-            dispatcher.forward(request, response);
+        } catch (NumberFormatException e) {
+            LOGGER.log(Level.SEVERE, e.toString(), e);
+            response.sendRedirect("./ErrorPage/generalError.jsp");
+            return;
         }
 
-        protected void doPost(HttpServletRequest request, HttpServletResponse response)throws ServletException, IOException {
-            doGet(request, response);
+        ProdottoBean p;
+        try {
+            p = model.doRetrieveByKey(pid);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, e.toString(), e);
+            response.sendRedirect("./ErrorPage/generalError.jsp");
+            return;
         }
+
+        if (p.getQuantita() <= 0) {
+            request.setAttribute("erroresoldout2", "Siamo spiacenti ma questo prodotto e' terminato");
+        }
+
+        request.setAttribute("detailed", p);
+
+        RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/details.jsp");
+        dispatcher.forward(request, response);
     }
 
-
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
+}

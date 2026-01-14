@@ -22,7 +22,15 @@ public class Preferiti extends HttpServlet {
     private static final prodottoDao model = new prodottoDao();
     private static final Logger LOGGER = Logger.getLogger(Preferiti.class.getName());
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    // 👉 SEAM PER I TEST: permette override nei test senza usare il DAO reale
+    protected ProdottoBean retrieveProduct(int productId) throws SQLException {
+        return model.doRetrieveByKey(productId);
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
         HttpSession session = request.getSession();
         Prefered preferiti = (Prefered) session.getAttribute("preferiti");
         if (preferiti == null) {
@@ -49,27 +57,37 @@ public class Preferiti extends HttpServlet {
 
         try {
             if ("add".equals(action)) {
+
                 int productId = Integer.parseInt(id);
-                ProdottoBean product = model.doRetrieveByKey(productId);
+                ProdottoBean product = retrieveProduct(productId);
+
                 if (product != null) {
                     preferiti.addPreferito(product);
                     session.setAttribute("preferiti", preferiti);
                 }
+
                 isRedirected = true;
                 response.sendRedirect(request.getContextPath() + "/preferiti.jsp");
+
             } else if ("Rimuovi".equals(action)) {
+
                 int productId = Integer.parseInt(id);
-                ProdottoBean product = model.doRetrieveByKey(productId);
+                ProdottoBean product = retrieveProduct(productId);
+
                 if (product != null) {
                     preferiti.removePreferito(product);
                     session.setAttribute("preferiti", preferiti);
                 }
+
                 isRedirected = true;
                 response.sendRedirect(request.getContextPath() + "/preferiti.jsp");
+
             } else if ("Aggiungi al carrello".equals(action)) {
+
                 isRedirected = true;
                 response.sendRedirect("GestioneCart?action=add&id=" + id);
             }
+
         } catch (NumberFormatException | SQLException e) {
             LOGGER.log(Level.SEVERE, e.toString(), e);
             if (!isRedirected) {
@@ -78,7 +96,9 @@ public class Preferiti extends HttpServlet {
         }
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         doGet(request, response);
     }
 }
