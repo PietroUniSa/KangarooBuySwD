@@ -84,9 +84,15 @@ public class ProdottoBean {
         this.iva = iva;
         this.tipo = tipo;
     }
+/*@
+  @ public normal_behavior
+  @   ensures \result == id;
+  @   assignable \nothing;
+  @*/
+public /*@ pure @*/ int getId() {
+    return id;
+}
 
-    /*@ ensures \result == id; assignable \nothing; @*/
-    /*@ pure @*/ public int getId() { return id; }
 
     /*@
       requires id >= 0;
