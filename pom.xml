@@ -117,20 +117,36 @@
                 <version>3.2.2</version>
                 <configuration>
                     <includes>
-                        <!-- test classici -->
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
-
-                        <!-- ✅ include più permissivo (copre RegressionTest0, ecc. se finiscono con Test...) -->
                         <include>**/*Test*.java</include>
-
-                        <!-- ✅ Randoop: nomi tipici -->
                         <include>**/RegressionTest*.java</include>
                         <include>**/ErrorTest*.java</include>
                     </includes>
+                    <!-- ✅ Aggiungi questa riga per JaCoCo -->
+                    <argLine>@{argLine} -Xmx1024m</argLine>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
