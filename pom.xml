@@ -48,6 +48,22 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- ✅ JUnit 4 - necessario per compilare i test generati da Randoop (org.junit.*) -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ✅ JUnit Vintage Engine - per eseguire test JUnit 4 con JUnit 5/Surefire -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Mockito per i mock objects -->
         <dependency>
             <groupId>org.mockito</groupId>
@@ -101,8 +117,16 @@
                 <version>3.2.2</version>
                 <configuration>
                     <includes>
+                        <!-- test classici -->
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
+
+                        <!-- ✅ include più permissivo (copre RegressionTest0, ecc. se finiscono con Test...) -->
+                        <include>**/*Test*.java</include>
+
+                        <!-- ✅ Randoop: nomi tipici -->
+                        <include>**/RegressionTest*.java</include>
+                        <include>**/ErrorTest*.java</include>
                     </includes>
                 </configuration>
             </plugin>

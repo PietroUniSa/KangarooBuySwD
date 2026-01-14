@@ -1,5 +1,7 @@
 package ita.kangaroo.model;
 
+import java.util.Objects;
+
 public class AddressBean {
 
     /*@ spec_public @*/ private int id;
@@ -172,5 +174,17 @@ public class AddressBean {
         if (!(obj instanceof AddressBean)) return false;
         AddressBean other = (AddressBean) obj;
         return this.id == other.id && this.username.equals(other.username);
+    }
+
+    /*@
+      @ also
+      @ public normal_behavior
+      @   assignable \nothing;
+      @   ensures \result == Objects.hash(id, username);
+      @*/
+    //@ skipesc
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, username);
     }
 }

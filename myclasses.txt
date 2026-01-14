@@ -1,0 +1,8 @@
+ita.kangaroo.model.Cart
+ita.kangaroo.model.CartProduct
+ita.kangaroo.model.ProdottoBean
+ita.kangaroo.model.OrderProductBean
+ita.kangaroo.model.OrdineBean
+ita.kangaroo.model.MetodoPagamentoBean
+ita.kangaroo.model.AddressBean
+ita.kangaroo.model.utenteBean
