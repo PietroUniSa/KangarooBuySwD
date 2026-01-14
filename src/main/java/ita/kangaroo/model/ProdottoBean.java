@@ -175,4 +175,17 @@ public class ProdottoBean {
     @*/
     public void setTipo(tipo tipo) { this.tipo = tipo; }
 
+    @Override
+    public String toString() {
+        return "ProdottoBean{" +
+                "id=" + id +
+                ", descrizione='" + descrizione + '\'' +
+                ", nome='" + nome + '\'' +
+                ", immagine='" + immagine + '\'' +
+                ", prezzo=" + prezzo +
+                ", quantita=" + quantita +
+                ", iva=" + iva +
+                ", tipo=" + tipo +
+                '}';
+    }
 }
