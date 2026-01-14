@@ -21,7 +21,7 @@ public class MetodoPagamentoDao {
 
     private static final Logger LOGGER = Logger.getLogger(MetodoPagamentoDao.class.getName());
 
-    private static final String TABLE_NAME = "Metodo_di_pagamento";
+    private static final String TABLE_NAME = "metodo_di_pagamento";
     private static final String JNDI_NAME = "jdbc/kangaroodb";
 
     private static DataSource ds;
