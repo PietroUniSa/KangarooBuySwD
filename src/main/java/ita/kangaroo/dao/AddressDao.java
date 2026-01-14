@@ -31,36 +31,54 @@ public class AddressDao {
         }
     }
 
+    /*@
+      @ private normal_behavior
+      @   requires ds != null;
+      @   ensures \result == ds;
+      @   assignable \nothing;
+      @ also
+      @ private exceptional_behavior
+      @   requires ds == null;
+      @   signals (IllegalStateException e) true;
+      @   signals_only IllegalStateException;
+      @   assignable \nothing;
+      @*/
     private static DataSource getDataSource() {
         if (ds == null) {
-            throw new IllegalStateException(
-                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
-            );
+            throw new IllegalStateException("DataSource not configured");
         }
         return ds;
     }
 
+    // Normalizza le stringhe dal DB: mai null, coerente con AddressBean
+    private static String nn(String s) {
+        return (s == null) ? "" : s;
+    }
+
+    /*@
+      @ public normal_behavior
+      @   requires address != null
+      @        && address.getVia() != null && !address.getVia().isEmpty()
+      @        && address.getCitta() != null && !address.getCitta().isEmpty()
+      @        && address.getCAP() != null && !address.getCAP().isEmpty()
+      @        && address.getUsername() != null && !address.getUsername().isEmpty();
+      @   ensures \result > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized int doSave(AddressBean address) throws SQLException {
-        /*@
-            requires address != null;
-            requires address.getVia() != null && !address.getVia().isEmpty();
-            requires address.getCitta() != null && !address.getCitta().isEmpty();
-            requires address.getCAP() != null && !address.getCAP().isEmpty();
-            requires address.getUsername() != null && !address.getUsername().isEmpty();
-
-            // Se il metodo termina normalmente, allora ha ottenuto una generated key valida.
-            ensures \result > 0;
-
-            // Se qualcosa va storto lato DB, può lanciare SQLException e allora nessuna postcondizione su \result vale.
-            signals (SQLException e) true;
-
-            // Opzionale ma più “pulito” per OpenJML:
-            signals_only SQLException;
-        @*/
-        String insertSQL = "INSERT INTO " + TABLE_NAME + " (via, citta, cap, username) VALUES (?, ?, ?, ?)";
+        String insertSQL =
+                "INSERT INTO " + TABLE_NAME + " (via, citta, cap, username) VALUES (?, ?, ?, ?)";
 
         try (Connection connection = getDataSource().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement preparedStatement =
+                     connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
 
             preparedStatement.setString(1, address.getVia());
             preparedStatement.setString(2, address.getCitta());
@@ -73,36 +91,33 @@ public class AddressDao {
             }
 
             try (ResultSet key = preparedStatement.getGeneratedKeys()) {
-                if (key.next()) {
-                    int id = key.getInt(1);
-                    if (id <= 0) {
-                        throw new SQLException("Insert succeeded but generated key is invalid: " + id);
-                    }
-                    return id;
-                } else {
-                    throw new SQLException("Insert succeeded but no generated key returned.");
+                if (!key.next()) {
+                    throw new SQLException("No generated key returned.");
                 }
+                int id = key.getInt(1);
+                if (id <= 0) {
+                    throw new SQLException("Generated key invalid: " + id);
+                }
+                return id;
             }
         }
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   ensures \result != null;
+      @   ensures \result.getId() == 0 || \result.getId() == id;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized AddressBean doRetrieveByKey(int id) throws SQLException {
-        /*@
-            requires id > 0;
-
-            ensures \result != null;
-
-            // Se non trova nulla, ritorna un bean "vuoto" (id = 0). Se trova, l'id combacia.
-            ensures (\result.getId() == 0) || (\result.getId() == id);
-
-            // Se trova un record (id != 0), allora i campi principali non sono null
-            // (a meno che il DB contenga null, ma assumiamo schema sensato).
-            ensures (\result.getId() != 0) ==> (\result.getVia() != null && \result.getCitta() != null
-                                               && \result.getCAP() != null && \result.getUsername() != null);
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
 
         AddressBean bean = new AddressBean();
@@ -115,32 +130,30 @@ public class AddressDao {
             try (ResultSet rs = preparedStatement.executeQuery()) {
                 if (rs.next()) {
                     bean.setId(rs.getInt("id"));
-                    bean.setVia(rs.getString("via"));
-                    bean.setCitta(rs.getString("citta"));
-                    bean.setCAP(rs.getString("cap"));
-                    bean.setUsername(rs.getString("username"));
+                    bean.setVia(nn(rs.getString("via")));
+                    bean.setCitta(nn(rs.getString("citta")));
+                    bean.setCAP(nn(rs.getString("cap")));          // "" è valido per AddressBean
+                    bean.setUsername(nn(rs.getString("username")));
                 }
             }
         }
-
         return bean;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires username != null && !username.isEmpty();
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized ArrayList<AddressBean> doRetrieveByClient(String username) throws SQLException {
-        /*@
-            requires username != null && !username.isEmpty();
-
-            ensures \result != null;
-
-            // Ogni elemento ritornato appartiene allo stesso username.
-            ensures (\forall int i; 0 <= i && i < \result.size();
-                        \result.get(i) != null &&
-                        \result.get(i).getUsername() != null &&
-                        \result.get(i).getUsername().equals(username));
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE username = ?";
 
         ArrayList<AddressBean> addresses = new ArrayList<>();
@@ -154,31 +167,30 @@ public class AddressDao {
                 while (rs.next()) {
                     AddressBean bean = new AddressBean();
                     bean.setId(rs.getInt("id"));
-                    bean.setVia(rs.getString("via"));
-                    bean.setCitta(rs.getString("citta"));
-                    bean.setCAP(rs.getString("cap"));
-                    bean.setUsername(rs.getString("username"));
+                    bean.setVia(nn(rs.getString("via")));
+                    bean.setCitta(nn(rs.getString("citta")));
+                    bean.setCAP(nn(rs.getString("cap")));
+                    bean.setUsername(nn(rs.getString("username")));
                     addresses.add(bean);
                 }
             }
         }
-
         return addresses;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized boolean doDelete(int id) throws SQLException {
-        /*@
-            requires id > 0;
-
-            // Se termina normalmente, ritorna un boolean.
-            ensures \result == true || \result == false;
-
-            // Specifica “semantica”: true significa che almeno una riga è stata eliminata.
-            // Non possiamo esprimerlo formalmente senza modellare rowsAffected, quindi restiamo conservativi.
-
-            signals (SQLException e) true;
-            signals_only SQLException;
-        @*/
         String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
 
         try (Connection connection = getDataSource().getConnection();

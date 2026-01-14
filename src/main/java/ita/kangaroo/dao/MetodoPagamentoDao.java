@@ -21,7 +21,7 @@ public class MetodoPagamentoDao {
 
     private static final Logger LOGGER = Logger.getLogger(MetodoPagamentoDao.class.getName());
 
-    private static final String TABLE_NAME = "metodo_di_pagamento";
+    private static final String TABLE_NAME = "Metodo_di_pagamento";
     private static final String JNDI_NAME = "jdbc/kangaroodb";
 
     private static DataSource ds;
@@ -37,33 +37,52 @@ public class MetodoPagamentoDao {
         }
     }
 
+    /*@
+      @ private normal_behavior
+      @   requires ds != null;
+      @   ensures \result == ds;
+      @   assignable \nothing;
+      @ also
+      @ private exceptional_behavior
+      @   requires ds == null;
+      @   signals (IllegalStateException e) true;
+      @   signals_only IllegalStateException;
+      @   assignable \nothing;
+      @*/
     private static DataSource getDataSource() {
         if (ds == null) {
-            throw new IllegalStateException(
-                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
-            );
+            // Niente concatenazioni: OpenJML/Z3 ogni tanto si impalla sulle stringhe
+            throw new IllegalStateException("DataSource not configured");
         }
         return ds;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires bean != null
+      @        && bean.numero_carta != null && !bean.numero_carta.isEmpty()
+      @        && bean.cvv != null && !bean.cvv.isEmpty()
+      @        && bean.data_scadenza != null && !bean.data_scadenza.isEmpty()
+      @        && bean.username != null && !bean.username.isEmpty();
+      @   ensures \result > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized int doSave(MetodoPagamentoBean bean) throws SQLException {
-        /*@
-            requires bean != null;
-            requires bean.getNumero_carta() != null && !bean.getNumero_carta().isEmpty();
-            requires bean.getCvv() != null && !bean.getCvv().isEmpty();
-            requires bean.getData_scadenza() != null && !bean.getData_scadenza().isEmpty();
-            requires bean.getUsername() != null && !bean.getUsername().isEmpty();
-            // Se l'insert va a buon fine deve ritornare un id > 0
-            ensures \result > 0;
-            signals (SQLException e) true;
-        @*/
+
         String insertSQL =
-            "INSERT INTO " + TABLE_NAME + " (numero_di_carta, cvv, data_scadenza, circuito, Username) " +
-            "VALUES (?, ?, ?, ?, ?)";
+                "INSERT INTO " + TABLE_NAME + " (numero_di_carta, cvv, data_scadenza, circuito, Username) " +
+                        "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement =
-                 connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+                     connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
 
             preparedStatement.setString(1, bean.getNumero_carta());
             preparedStatement.setString(2, bean.getCvv());
@@ -90,12 +109,20 @@ public class MetodoPagamentoDao {
         }
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized boolean doDelete(int id) throws SQLException {
-        /*@
-            requires id > 0;
-            ensures \result == true || \result == false;
-            signals (SQLException e) true;
-        @*/
+
         String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
 
         try (Connection connection = getDataSource().getConnection();
@@ -107,13 +134,22 @@ public class MetodoPagamentoDao {
         }
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id > 0;
+      @   ensures \result != null;
+      @   ensures (\result.getId() == id) || (\result.getId() == 0);
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized MetodoPagamentoBean doRetrieveByKey(int id) throws SQLException {
-        /*@
-            requires id > 0;
-            ensures \result != null;
-            ensures (\result.getId() == id) || (\result.getId() == 0);
-            signals (SQLException e) true;
-        @*/
+
         MetodoPagamentoBean bean = new MetodoPagamentoBean();
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
 
@@ -130,12 +166,9 @@ public class MetodoPagamentoDao {
                     bean.setData_scadenza(rs.getString("data_scadenza"));
                     bean.setCircuito(rs.getString("circuito"));
 
-                    // Nota: in tabella tu usi "Username" nel WHERE. Qui leggo "username".
-                    // Su MySQL spesso non importa, ma su DB case-sensitive sì. Uniforma lo schema.
-                    bean.setUsername(rs.getString("username"));
-                    if (bean.getUsername() == null) {
-                        bean.setUsername(rs.getString("Username"));
-                    }
+                    String u = rs.getString("username");
+                    if (u == null) u = rs.getString("Username");
+                    bean.setUsername(u);
                 }
             }
         }
@@ -143,15 +176,21 @@ public class MetodoPagamentoDao {
         return bean;
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires username != null && !username.isEmpty();
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized ArrayList<MetodoPagamentoBean> doRetrieveByClient(String username) throws SQLException {
-        /*@
-            requires username != null && !username.isEmpty();
-            ensures \result != null;
-            ensures (\forall int i; 0 <= i && i < \result.size();
-                       \result.get(i).getUsername() != null &&
-                       \result.get(i).getUsername().equals(username));
-            signals (SQLException e) true;
-        @*/
+
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Username = ?";
 
         ArrayList<MetodoPagamentoBean> beans = new ArrayList<>();

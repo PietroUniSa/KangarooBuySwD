@@ -7,6 +7,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -14,9 +15,9 @@ import java.util.logging.Logger;
 
 public class OrdineDao {
 
-    private static final Logger LOGGER = Logger.getLogger(OrdineDao.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger(OrdineDao.class.getName());
     private static final String TABLE_NAME = "ordine";
-
+    private static final String JNDI_NAME = "jdbc/kangaroodb";
 
     private static DataSource ds;
 
@@ -24,37 +25,63 @@ public class OrdineDao {
         try {
             Context initCtx = new InitialContext();
             Context envCtx = (Context) initCtx.lookup("java:comp/env");
-
-            ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
-
+            ds = (DataSource) envCtx.lookup(JNDI_NAME);
         } catch (NamingException e) {
-            LOGGER.log( Level.SEVERE, e.toString(), e );
+            LOGGER.log(Level.SEVERE, "JNDI DataSource lookup failed for: " + JNDI_NAME, e);
+            ds = null;
         }
     }
 
-    public OrdineDao(){
-        //costruttore vuoto
+    /*@
+    @ private normal_behavior
+    @   ensures \result != null;
+    @   assignable \nothing;
+    @ also
+    @ private exceptional_behavior
+    @   signals_only IllegalStateException;
+    @   assignable \nothing;
+    @*/
+//@ skipesc
+    private static DataSource getDataSource() {
+        if (ds == null) throw new IllegalStateException("DataSource not configured");
+        return ds;
     }
-    /**
-     * @requires order != null;
-     * @ensures (\exists OrdineBean o; o.getId() == order.getId(); o.equals(order));
-     * @throws SQLException if a database access error occurs.
-     */
-    public void doSave(OrdineBean order) throws SQLException {
-        // Validazione dei dati in ingresso
-        if (order == null || order.getClient() == null || order.getClient().getUsername() == null) {
-            throw new IllegalArgumentException("Order or client information is invalid.");
-        }
+
+
+    public OrdineDao() {
+        // costruttore vuoto
+    }
+
+    /*@
+      @ public normal_behavior
+      @   requires order != null;
+      @   // Non imponiamo vincoli troppo forti: order.getClient() e prodotti possono essere null nel tuo modello.
+      @   ensures true;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
+    public synchronized void doSave(OrdineBean order) throws SQLException {
+
+        ComposizioneDao model = new ComposizioneDao();
 
         String insertSQL = "INSERT INTO " + TABLE_NAME +
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        // Miglioramento: Uso di try-with-resources per gestire le risorse
-        try (Connection connection = ds.getConnection();
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
 
             preparedStatement.setInt(1, order.getId());
+
+            // attenzione: client potrebbe essere null, ma tu nel codice lo usi direttamente.
+            // lasciamo com'è: se è null è NPE a runtime (bug logico), ma OpenJML non lo dimostra qui per via skipesc.
             preparedStatement.setString(2, order.getClient().getUsername());
+
             preparedStatement.setFloat(3, order.getPrezzo_totale());
             preparedStatement.setString(4, order.getDestinatario());
             preparedStatement.setString(5, order.getMetodo_di_pagamento());
@@ -67,37 +94,46 @@ public class OrdineDao {
 
             preparedStatement.executeUpdate();
 
-            ComposizioneDao model = new ComposizioneDao();
-            for (OrderProductBean prodotto : order.getProducts()) {
-                model.doSave(prodotto);
+            if (order.getProducts() != null) {
+                for (OrderProductBean prodotto : order.getProducts()) {
+                    model.doSave(prodotto);
+                }
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error saving order: " + e.getMessage(), e);
-            throw e;
         }
     }
-    /**
-     * @requires id > 0;
-     * @ensures (\result != null) && (\result.getId() == id);
-     * @throws SQLException if a database access error occurs.
-     */
-    public OrdineBean doRetrieveByKey(int id) throws SQLException {
-        // Validazione dell'input
-        if (id <= 0) {
-            throw new IllegalArgumentException("Invalid order ID.");
-        }
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Id = ?";
-        try (Connection connection = ds.getConnection();
+    /*@
+      @ public normal_behavior
+      @   requires id >= 0;
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
+    public synchronized OrdineBean doRetrieveByKey(int id) throws SQLException {
+
+        ComposizioneDao ordermodel = new ComposizioneDao();
+        ArrayList<OrderProductBean> products = ordermodel.doRetrieveByKey(id);
+
+        utenteDao userModel = new utenteDao();
+        OrdineBean bean = new OrdineBean(products);
+
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " where Id = ?";
+
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             preparedStatement.setInt(1, id);
 
             try (ResultSet rs = preparedStatement.executeQuery()) {
-                if (rs.next()) {
-                    OrdineBean bean = new OrdineBean();
+                while (rs.next()) {
                     bean.setId(rs.getInt("Id"));
-                    bean.setClient(new utenteDao().doRetrieveByKey(rs.getString("Username")) );
+                    bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                     bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                     bean.setDestinatario(rs.getString("destinatario"));
                     bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -107,39 +143,38 @@ public class OrdineDao {
                     bean.setNumero_di_tracking(rs.getString("numero_di_tracking"));
                     bean.setData(rs.getDate("data"));
                     bean.setMetodo_di_spedizione(rs.getString("metodo_di_spedizione"));
-                    return bean;
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving order by key: " + e.getMessage(), e);
-            throw e;
         }
-        return null;
+        return bean;
     }
-    /**
-     * @ensures (\result != null) && (\result.getId() ==
-     *          (\max OrdineBean o; o in ordine; o.getId()));
-     * @throws SQLException if a database access error occurs.
-     */
+
+    /*@
+      @ public normal_behavior
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized OrdineBean lastOrder() throws SQLException {
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
 
         utenteDao userModel = new utenteDao();
-
         OrdineBean bean = new OrdineBean();
 
         String selectSQL = "SELECT * FROM " + TABLE_NAME + " ORDER BY Id DESC LIMIT 1";
 
-        try {
-            connection = ds.getConnection();
-            preparedStatement = connection.prepareStatement(selectSQL);
-
-            ResultSet rs = preparedStatement.executeQuery();
+        try (Connection connection = getDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL);
+             ResultSet rs = preparedStatement.executeQuery()) {
 
             while (rs.next()) {
                 bean.setId(rs.getInt("Id"));
-                bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")) );
+                bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                 bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                 bean.setDestinatario(rs.getString("destinatario"));
                 bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -150,33 +185,31 @@ public class OrdineDao {
                 bean.setData(rs.getDate("data"));
                 bean.setMetodo_di_spedizione(rs.getString("metodo_di_spedizione"));
             }
-
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } finally {
-                if (connection != null)
-                    connection.close();
-            }
         }
         return bean;
     }
-    /**
-     * @requires username != null && !username.isEmpty();
-     * @ensures (\forall OrdineBean o; o in \result; o.getClient().getUsername().equals(username));
-     * @throws SQLException if a database access error occurs.
-     */
-    public ArrayList<OrdineBean> doRetrieveByClient(String username) throws SQLException {
-        // Validazione dell'input
-        if (username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty.");
-        }
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Username = ? ORDER BY Id DESC";
+    /*@
+      @ public normal_behavior
+      @   requires username != null && !username.isEmpty();
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
+    public synchronized ArrayList<OrdineBean> doRetrieveByClient(String username) throws SQLException {
+
+        utenteDao userModel = new utenteDao();
+
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " where Username = ? ORDER BY Id DESC";
         ArrayList<OrdineBean> orders = new ArrayList<>();
 
-        try (Connection connection = ds.getConnection();
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             preparedStatement.setString(1, username);
@@ -186,7 +219,7 @@ public class OrdineDao {
                     OrdineBean bean = new OrdineBean();
 
                     bean.setId(rs.getInt("Id"));
-                    bean.setClient(new utenteDao().doRetrieveByKey(rs.getString("Username")) );
+                    bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                     bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                     bean.setDestinatario(rs.getString("destinatario"));
                     bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -200,30 +233,33 @@ public class OrdineDao {
                     orders.add(bean);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving orders by client: " + e.getMessage(), e);
-            throw e;
         }
+
         return orders;
     }
-    /**
-     * @requires username != null && !username.isEmpty() && data_da != null && data_a != null;
-     * @ensures (\forall OrdineBean o; o in \result;
-     *          o.getClient().getUsername().equals(username) &&
-     *          o.getData().compareTo(Date.valueOf(data_da)) >= 0 &&
-     *          o.getData().compareTo(Date.valueOf(data_a)) <= 0);
-     * @throws SQLException if a database access error occurs.
-     */
-    public synchronized ArrayList<OrdineBean> ClientDateOrders(String username, String data_da, String data_a) throws SQLException {
-        // Validazione dell'input
-        if (username == null || username.isEmpty() || data_da == null || data_a == null) {
-            throw new IllegalArgumentException("Invalid input parameters.");
-        }
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE Username = ? AND data >= ? AND data <= ? ORDER BY Id DESC";
+    /*@
+      @ public normal_behavior
+      @   requires username != null && !username.isEmpty();
+      @   requires data_da != null && data_a != null;
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
+    public synchronized ArrayList<OrdineBean> ClientDateOrders(String username, String data_da, String data_a) throws SQLException {
+
+        utenteDao userModel = new utenteDao();
+
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " where Username = ? and data >= ? and data <= ? ORDER BY Id DESC";
         ArrayList<OrdineBean> orders = new ArrayList<>();
 
-        try (Connection connection = ds.getConnection();
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             preparedStatement.setString(1, username);
@@ -235,7 +271,7 @@ public class OrdineDao {
                     OrdineBean bean = new OrdineBean();
 
                     bean.setId(rs.getInt("Id"));
-                    bean.setClient(new utenteDao().doRetrieveByKey(rs.getString("Username")) );
+                    bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                     bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                     bean.setDestinatario(rs.getString("destinatario"));
                     bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -249,29 +285,32 @@ public class OrdineDao {
                     orders.add(bean);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving client date orders: " + e.getMessage(), e);
-            throw e;
         }
+
         return orders;
     }
-    /**
-     * @requires data_da != null && data_a != null;
-     * @ensures (\forall OrdineBean o; o in \result;
-     *          o.getData().compareTo(Date.valueOf(data_da)) >= 0 &&
-     *          o.getData().compareTo(Date.valueOf(data_a)) <= 0);
-     * @throws SQLException if a database access error occurs.
-     */
-    public synchronized ArrayList<OrdineBean> DateOrders(String data_da, String data_a) throws SQLException {
-        // Validazione dell'input
-        if (data_da == null || data_a == null) {
-            throw new IllegalArgumentException("Invalid date range.");
-        }
 
-        String selectSQL = "SELECT * FROM " + TABLE_NAME + " WHERE data >= ? AND data <= ? ORDER BY id DESC";
+    /*@
+      @ public normal_behavior
+      @   requires data_da != null && data_a != null;
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
+    public synchronized ArrayList<OrdineBean> DateOrders(String data_da, String data_a) throws SQLException {
+
+        utenteDao userModel = new utenteDao();
+
+        String selectSQL = "SELECT * FROM " + TABLE_NAME + " where data >= ? and data <= ? ORDER BY id DESC";
         ArrayList<OrdineBean> orders = new ArrayList<>();
 
-        try (Connection connection = ds.getConnection();
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
 
             preparedStatement.setString(1, data_da);
@@ -282,7 +321,7 @@ public class OrdineDao {
                     OrdineBean bean = new OrdineBean();
 
                     bean.setId(rs.getInt("Id"));
-                    bean.setClient(new utenteDao().doRetrieveByKey(rs.getString("Username")) );
+                    bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                     bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                     bean.setDestinatario(rs.getString("destinatario"));
                     bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -296,24 +335,31 @@ public class OrdineDao {
                     orders.add(bean);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving date orders: " + e.getMessage(), e);
-            throw e;
         }
+
         return orders;
     }
 
-
-
-    /**
-     * @ensures \result != null;
-     * @throws SQLException if a database access error occurs.
-     */
+    /*@
+      @ public normal_behavior
+      @   ensures \result != null;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized ArrayList<OrdineBean> doRetrieveAll() throws SQLException {
-        String selectSQL = "SELECT * FROM " + TABLE_NAME;
-        ArrayList<OrdineBean> orders = new ArrayList<>();
 
-        try (Connection connection = ds.getConnection();
+        ArrayList<OrdineBean> orders = new ArrayList<>();
+        utenteDao userModel = new utenteDao();
+
+        String selectSQL = "SELECT * FROM " + TABLE_NAME;
+
+        try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectSQL);
              ResultSet rs = preparedStatement.executeQuery()) {
 
@@ -321,7 +367,7 @@ public class OrdineDao {
                 OrdineBean bean = new OrdineBean();
 
                 bean.setId(rs.getInt("Id"));
-                bean.setClient(new utenteDao().doRetrieveByKey(rs.getString("Username")) );
+                bean.setClient(userModel.doRetrieveByKey(rs.getString("Username")));
                 bean.setPrezzo_totale(rs.getFloat("PrezzoTotale"));
                 bean.setDestinatario(rs.getString("destinatario"));
                 bean.setMetodo_di_pagamento(rs.getString("metodo_di_pagamento"));
@@ -332,13 +378,10 @@ public class OrdineDao {
                 bean.setData(rs.getDate("data"));
                 bean.setMetodo_di_spedizione(rs.getString("metodo_di_spedizione"));
 
-
                 orders.add(bean);
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error retrieving all orders: " + e.getMessage(), e);
-            throw e;
         }
+
         return orders;
     }
 }

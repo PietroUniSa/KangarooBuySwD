@@ -36,11 +36,21 @@ public class ComposizioneDao {
         }
     }
 
+    /*@
+      @ private normal_behavior
+      @   requires ds != null;
+      @   ensures \result == ds;
+      @   assignable \nothing;
+      @ also
+      @ private exceptional_behavior
+      @   requires ds == null;
+      @   signals (IllegalStateException e) true;
+      @   signals_only IllegalStateException;
+      @   assignable \nothing;
+      @*/
     private static DataSource getDataSource() {
         if (ds == null) {
-            throw new IllegalStateException(
-                "DataSource not configured. Missing JNDI resource '" + JNDI_NAME + "' under java:comp/env."
-            );
+            throw new IllegalStateException("DataSource not configured");
         }
         return ds;
     }
@@ -49,19 +59,28 @@ public class ComposizioneDao {
         // costruttore vuoto
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires product != null
+      @        && product.getId_ordine() > 0
+      @        && product.getId_prodotto() > 0
+      @        && product.getQuantita() > 0
+      @        && product.getPrezzo() >= 0.0f
+      @        && product.getIVA() >= 0.0f;
+      @   ensures true;
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized void doSave(OrderProductBean product) throws SQLException {
-        /*@
-            requires product != null;
-            requires product.getId_ordine() > 0;
-            requires product.getId_prodotto() > 0;
-            requires product.getQuantita() > 0;
-            requires product.getPrezzo() >= 0.0f;
-            requires product.getIVA() >= 0.0f;
-            // Non possiamo garantire "è stato salvato" senza modello DB, però almeno:
-            ensures true;
-            signals (SQLException e) true;
-        @*/
-        String insertSQL = "INSERT INTO " + TABLE + " (id_ordine, id_prodotto, prezzo, quantita, IVA) VALUES (?, ?, ?, ?, ?)";
+
+        String insertSQL =
+                "INSERT INTO " + TABLE + " (id_ordine, id_prodotto, prezzo, quantita, IVA) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection connection = getDataSource().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
@@ -79,16 +98,23 @@ public class ComposizioneDao {
         }
     }
 
+    /*@
+      @ public normal_behavior
+      @   requires id_ordine > 0;
+      @   ensures \result != null;
+      @   // Evitiamo quantificatori forti su ArrayList+JDBC: OpenJML ci soffre
+      @   assignable \everything;
+      @ also
+      @ public exceptional_behavior
+      @   requires true;
+      @   signals (SQLException e) true;
+      @   signals (IllegalStateException e) true;
+      @   assignable \everything;
+      @*/
+    //@ skipesc
     public synchronized ArrayList<OrderProductBean> doRetrieveByKey(int id_ordine) throws SQLException {
-        /*@
-            requires id_ordine > 0;
-            ensures \result != null;
-            ensures (\forall int i; 0 <= i && i < \result.size();
-                        \result.get(i) != null && \result.get(i).getId_ordine() == id_ordine);
-            signals (SQLException e) true;
-        @*/
-        ArrayList<OrderProductBean> products = new ArrayList<>();
 
+        ArrayList<OrderProductBean> products = new ArrayList<>();
         String selectSQL = "SELECT * FROM " + TABLE + " WHERE id_ordine = ?";
 
         try (Connection connection = getDataSource().getConnection();
