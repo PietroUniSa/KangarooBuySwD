@@ -40,6 +40,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      # ✅ FIX: create upload dir used by AdminServlet (/var/kangaroo_uploads)
+      - name: Create upload directory
+        run: |
+          sudo mkdir -p /var/kangaroo_uploads
+          sudo chmod -R 777 /var/kangaroo_uploads
+
       - name: Install Dependencies
         run: mvn clean install -DskipTests
 
