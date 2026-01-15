@@ -17,15 +17,14 @@ public class prodottoDao {
 
     private static final Logger LOGGER = Logger.getLogger(prodottoDao.class.getName());
     private static final String TABLE = "prodotto";
-
+    private static final String JNDI_NAME = "jdbc/kangaroodb";
     private static DataSource ds;
 
     static {
         try {
             Context initCtx = new InitialContext();
             Context envCtx = (Context) initCtx.lookup("java:comp/env");
-
-            ds = (DataSource) envCtx.lookup("jdbc/kangaroodb");
+            ds = (DataSource) envCtx.lookup(JNDI_NAME);
 
         } catch (NamingException e) {
             LOGGER.log(Level.SEVERE, e.toString(), e);
