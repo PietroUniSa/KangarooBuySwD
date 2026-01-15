@@ -9,10 +9,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentCaptor;
 
+import static org.junit.jupiter.api.Assertions.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -141,79 +148,154 @@ class GestionePagamentoTest {
         verify(response).sendRedirect("./ErrorPage/cartError.jsp");
     }
 
-    @Test
-    void confirmBuy_happyPath_savesOrder_updatesQuantities_savesInvoice_andRedirectsCatalogo() throws Exception {
-        GestionePagamento s = servlet();
+   @Test
+void confirmBuy_happyPath_capturesOrderAndInvoice_assertsAllFields_killsSettersAndMathMutants() throws Exception {
+    GestionePagamento s = servlet();
 
-        when(request.getParameter("action")).thenReturn("confirm_buy");
-        when(session.getAttribute("utente")).thenReturn(loggedUser());
+    when(request.getParameter("action")).thenReturn("confirm_buy");
+    utenteBean user = loggedUser();
+    when(session.getAttribute("utente")).thenReturn(user);
 
-        // cart con 1 prodotto quantità 2
-        Cart cart = mock(Cart.class);
-        CartProduct cp = mock(CartProduct.class);
+    // --- cart con 2 prodotti e quantità diverse (uccide +->- e *->/)
+    Cart cart = mock(Cart.class);
 
-        ProdottoBean prodInCart = new ProdottoBean();
-        prodInCart.setId(10);
-        prodInCart.setPrezzo(50f);
-        prodInCart.setIva(22f);
-        prodInCart.setQuantita(10);
+    CartProduct cp1 = mock(CartProduct.class);
+    ProdottoBean p1 = new ProdottoBean();
+    p1.setId(10);
+    p1.setPrezzo(50f);
+    p1.setIva(22f);
+    p1.setQuantita(10);
+    when(cp1.getProduct()).thenReturn(p1);
+    when(cp1.getQuantity()).thenReturn(2); // 50*2 = 100
 
-        when(cp.getProduct()).thenReturn(prodInCart);
-        when(cp.getQuantity()).thenReturn(2);
+    CartProduct cp2 = mock(CartProduct.class);
+    ProdottoBean p2 = new ProdottoBean();
+    p2.setId(20);
+    p2.setPrezzo(30f);
+    p2.setIva(10f);
+    p2.setQuantita(3); // boundary: uguale alla qty nel carrello
+    when(cp2.getProduct()).thenReturn(p2);
+    when(cp2.getQuantity()).thenReturn(3); // 30*3 = 90
 
-        ArrayList<CartProduct> cps = new ArrayList<>();
-        cps.add(cp);
+    ArrayList<CartProduct> cps = new ArrayList<>();
+    cps.add(cp1);
+    cps.add(cp2);
 
-        when(cart.getProducts()).thenReturn(cps);
-        when(session.getAttribute("cart")).thenReturn(cart);
+    when(cart.getProducts()).thenReturn(cps);
+    when(session.getAttribute("cart")).thenReturn(cart);
 
-        // request params
-        when(request.getParameter("carta")).thenReturn("1");
-        when(request.getParameter("indirizzo")).thenReturn("2");
-        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
-        when(request.getParameter("note")).thenReturn("Nota");
-        when(request.getParameter("spedizione")).thenReturn("Standard");
-        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+    // request params (Express per totale +5)
+    when(request.getParameter("carta")).thenReturn("1");
+    when(request.getParameter("indirizzo")).thenReturn("2");
+    when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+    when(request.getParameter("note")).thenReturn("Nota");
+    when(request.getParameter("spedizione")).thenReturn("Express");
+    when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
 
-        // last order
-        OrdineBean last = new OrdineBean();
-        last.setId(7);
-        when(orderModel.lastOrder()).thenReturn(last);
+    // last order id -> deve incrementare di +1 (uccide "increment 1 to -1")
+    OrdineBean last = new OrdineBean();
+    last.setId(7);
+    when(orderModel.lastOrder()).thenReturn(last);
 
-        // payment
-        MetodoPagamentoBean mp = new MetodoPagamentoBean();
-        mp.setCircuito("VISA");
-        mp.setNumero_carta("4111111111111111");
-        when(paymentModel.doRetrieveByKey(1)).thenReturn(mp);
+    // payment
+    MetodoPagamentoBean mp = new MetodoPagamentoBean();
+    mp.setCircuito("VISA");
+    mp.setNumero_carta("4111111111111111");
+    when(paymentModel.doRetrieveByKey(1)).thenReturn(mp);
 
-        // address
-        AddressBean ab = new AddressBean();
-        ab.setVia("Via Roma");
-        ab.setCitta("Napoli");
-        when(addressModel.doRetrieveByKey(2)).thenReturn(ab);
+    // address
+    AddressBean ab = new AddressBean();
+    ab.setVia("Via Roma");
+    ab.setCitta("Napoli");
+    when(addressModel.doRetrieveByKey(2)).thenReturn(ab);
 
-        // prodottoModel: rilegge e poi updateQuantity
-        ProdottoBean prodDb = new ProdottoBean();
-        prodDb.setId(10);
-        prodDb.setQuantita(10);
-        when(prodottoModel.doRetrieveByKey(10)).thenReturn(prodDb);
+    // prodottoModel: rilegge e poi updateQuantity
+    ProdottoBean prodDb1 = new ProdottoBean();
+    prodDb1.setId(10);
+    prodDb1.setQuantita(10);
+    when(prodottoModel.doRetrieveByKey(10)).thenReturn(prodDb1);
 
-        // metodi void: doNothing
-        doNothing().when(orderModel).doSave(any(OrdineBean.class));
-        doNothing().when(prodottoModel).updateQuantity(anyInt(), anyInt());
-        doNothing().when(invoiceModel).doSave(any(FatturazioneBean.class));
+    ProdottoBean prodDb2 = new ProdottoBean();
+    prodDb2.setId(20);
+    prodDb2.setQuantita(3);
+    when(prodottoModel.doRetrieveByKey(20)).thenReturn(prodDb2);
 
-        s.doGet(request, response);
+    // captor per ordine e fattura
+    ArgumentCaptor<OrdineBean> orderCaptor = ArgumentCaptor.forClass(OrdineBean.class);
+    ArgumentCaptor<FatturazioneBean> invoiceCaptor = ArgumentCaptor.forClass(FatturazioneBean.class);
 
-        verify(orderModel).doSave(any(OrdineBean.class));
-        verify(prodottoModel).updateQuantity(eq(10), eq(8));
-        verify(invoiceModel).doSave(any(FatturazioneBean.class));
+    doNothing().when(orderModel).doSave(any(OrdineBean.class));
+    doNothing().when(prodottoModel).updateQuantity(anyInt(), anyInt());
+    doNothing().when(invoiceModel).doSave(any(FatturazioneBean.class));
 
-        verify(session).removeAttribute("cart");
-        verify(session).setAttribute("cart", null);
+    s.doGet(request, response);
 
-        verify(response).sendRedirect("GestioneCatalogo");
-    }
+    // verify + capture
+    verify(orderModel).doSave(orderCaptor.capture());
+    verify(invoiceModel).doSave(invoiceCaptor.capture());
+
+    // quantità aggiornate: 10-2=8 e 3-3=0
+    verify(prodottoModel).updateQuantity(eq(10), eq(8));
+    verify(prodottoModel).updateQuantity(eq(20), eq(0));
+
+    verify(session).removeAttribute("cart");
+    verify(session).setAttribute("cart", null);
+    verify(response).sendRedirect("GestioneCatalogo");
+
+    // --- ASSERT ordine (uccide i "removed call to setX")
+    OrdineBean savedOrder = orderCaptor.getValue();
+    assertNotNull(savedOrder);
+
+    assertEquals(8, savedOrder.getId(), "id ordine deve essere lastId+1");
+
+    assertEquals("Mario Rossi", savedOrder.getDestinatario());
+    assertEquals("carta_di_credito", savedOrder.getMetodo_di_pagamento());
+    assertEquals("Express", savedOrder.getMetodo_di_spedizione());
+    assertEquals("VISA", savedOrder.getCircuito());
+    assertEquals("4111111111111111", savedOrder.getNumero_carta());
+    assertEquals("Via Roma,Napoli", savedOrder.getIndirizzo_di_spedizione());
+
+    // totale = 100 + 90 + 5 (Express)
+    assertEquals(195f, savedOrder.getPrezzo_totale(), 0.0001f);
+
+    assertNotNull(savedOrder.getData(), "data ordine deve essere settata");
+    assertNotNull(savedOrder.getNumero_di_tracking(), "tracking deve essere settato");
+    assertFalse(savedOrder.getNumero_di_tracking().isEmpty());
+
+    // products list
+    assertNotNull(savedOrder.getProducts());
+    assertEquals(2, savedOrder.getProducts().size());
+
+    // verifica contenuto orderProducts (uccide setId_ordine/id_prodotto/prezzo/IVA/quantita)
+    OrderProductBean op1 = savedOrder.getProducts().stream()
+            .filter(op -> op.getId_prodotto() == 10)
+            .findFirst().orElseThrow();
+    assertEquals(8, op1.getId_ordine());
+    assertEquals(50f, op1.getPrezzo(), 0.0001f);
+    assertEquals(22f, op1.getIVA(), 0.0001f);
+    assertEquals(2, op1.getQuantita());
+
+    OrderProductBean op2 = savedOrder.getProducts().stream()
+            .filter(op -> op.getId_prodotto() == 20)
+            .findFirst().orElseThrow();
+    assertEquals(8, op2.getId_ordine());
+    assertEquals(30f, op2.getPrezzo(), 0.0001f);
+    assertEquals(10f, op2.getIVA(), 0.0001f);
+    assertEquals(3, op2.getQuantita());
+
+    // --- ASSERT fattura (uccide i setImporto/setStato_pagamento/setIva/setId ecc.)
+    FatturazioneBean inv = invoiceCaptor.getValue();
+    assertNotNull(inv);
+
+    assertEquals(8, inv.getId());
+    assertEquals(195f, inv.getImporto(), 0.0001f);
+    assertEquals("Paid", inv.getStato_pagamento());
+    assertEquals(22, inv.getIva());
+    assertNotNull(inv.getSdi());
+    assertFalse(inv.getSdi().isEmpty());
+    assertNotNull(inv.getData_emissione());
+    assertNotNull(inv.getData_scadenza());
+}
 
     @Test
     void confirmBuy_productsNotAvailable_redirectsToGeneralError() throws Exception {

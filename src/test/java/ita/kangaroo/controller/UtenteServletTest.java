@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -135,31 +136,48 @@ class UtenteServletTest {
     }
 
     @Test
-    void doGet_addPaymentCard_valid_savesAndAddsToList() throws Exception {
-        when(utente.getEmail()).thenReturn("user@example.com");
-        when(utente.getUsername()).thenReturn("mario");
+void doGet_addPaymentCard_valid_savesAndAddsToList() throws Exception {
+    when(utente.getEmail()).thenReturn("user@example.com");
+    when(utente.getUsername()).thenReturn("mario");
 
-        ArrayList<AddressBean> addresses = new ArrayList<>();
-        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+    ArrayList<AddressBean> addresses = new ArrayList<>();
+    ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
 
-        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
-        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+    when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+    when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
 
-        when(request.getParameter("action")).thenReturn("addPaymentCard");
-        when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
-        when(request.getParameter("cvv")).thenReturn("123");
-        when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
-        when(request.getParameter("circuito")).thenReturn("VISA");
+    when(request.getParameter("action")).thenReturn("addPaymentCard");
+    when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
+    when(request.getParameter("cvv")).thenReturn("123");
+    when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
+    when(request.getParameter("circuito")).thenReturn("VISA");
 
-        when(paymentModel.doSave(any(MetodoPagamentoBean.class))).thenReturn(7);
+    when(paymentModel.doSave(any(MetodoPagamentoBean.class))).thenReturn(7);
 
-        servlet.doGet(request, response);
+    servlet.doGet(request, response);
 
-        assertEquals(1, payments.size());
-        assertEquals(7, payments.get(0).getId());
-        verify(paymentModel).doSave(any(MetodoPagamentoBean.class));
-        verify(dispatcherCliente).forward(request, response);
-    }
+    // cattura il bean passato al DAO: qui muoiono i "removed call to setX"
+    var cardCaptor = org.mockito.ArgumentCaptor.forClass(MetodoPagamentoBean.class);
+    verify(paymentModel).doSave(cardCaptor.capture());
+    MetodoPagamentoBean saved = cardCaptor.getValue();
+
+    assertNotNull(saved);
+    assertEquals("4111111111111111", saved.getNumero_carta());
+    assertEquals("123", saved.getCvv());
+    assertEquals("2030-12-31", saved.getData_scadenza());
+    assertEquals("VISA", saved.getCircuito());
+    assertEquals("mario", saved.getUsername());
+
+    // la servlet aggiunge la card alla lista e setta l'id dopo il doSave
+    assertEquals(1, payments.size());
+    assertEquals(7, payments.get(0).getId());
+
+    // verifica che aggiorni l'attributo in request
+    verify(request, atLeastOnce()).setAttribute(eq("payments"), same(payments));
+
+    verify(dispatcherCliente).forward(request, response);
+}
+
 
     @Test
     void doGet_deletePaymentCard_removesAndDeletes() throws Exception {
@@ -189,30 +207,46 @@ class UtenteServletTest {
     }
 
     @Test
-    void doGet_addAddress_valid_savesAndAddsToList() throws Exception {
-        when(utente.getEmail()).thenReturn("user@example.com");
-        when(utente.getUsername()).thenReturn("mario");
+void doGet_addAddress_valid_savesAndAddsToList() throws Exception {
+    when(utente.getEmail()).thenReturn("user@example.com");
+    when(utente.getUsername()).thenReturn("mario");
 
-        ArrayList<AddressBean> addresses = new ArrayList<>();
-        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+    ArrayList<AddressBean> addresses = new ArrayList<>();
+    ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
 
-        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
-        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+    when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+    when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
 
-        when(request.getParameter("action")).thenReturn("addAddress");
-        when(request.getParameter("via_indirizzo")).thenReturn("Via Roma 10");
-        when(request.getParameter("citta_indirizzo")).thenReturn("Napoli");
-        when(request.getParameter("CAP_indirizzo")).thenReturn("80100");
+    when(request.getParameter("action")).thenReturn("addAddress");
+    when(request.getParameter("via_indirizzo")).thenReturn("Via Roma 10");
+    when(request.getParameter("citta_indirizzo")).thenReturn("Napoli");
+    when(request.getParameter("CAP_indirizzo")).thenReturn("80100");
 
-        when(addressModel.doSave(any(AddressBean.class))).thenReturn(55);
+    when(addressModel.doSave(any(AddressBean.class))).thenReturn(55);
 
-        servlet.doGet(request, response);
+    servlet.doGet(request, response);
 
-        assertEquals(1, addresses.size());
-        assertEquals(55, addresses.get(0).getId());
-        verify(addressModel).doSave(any(AddressBean.class));
-        verify(dispatcherCliente).forward(request, response);
-    }
+    // cattura il bean passato al DAO: qui muoiono i "removed call to setVia/setCitta/setCAP/setUsername"
+    var addressCaptor = org.mockito.ArgumentCaptor.forClass(AddressBean.class);
+    verify(addressModel).doSave(addressCaptor.capture());
+    AddressBean saved = addressCaptor.getValue();
+
+    assertNotNull(saved);
+    assertEquals("Via Roma 10", saved.getVia());
+    assertEquals("Napoli", saved.getCitta());
+    assertEquals("80100", saved.getCAP());
+    assertEquals("mario", saved.getUsername());
+
+    // la servlet setta l'id dopo il doSave e aggiunge alla lista
+    assertEquals(1, addresses.size());
+    assertEquals(55, addresses.get(0).getId());
+
+    // verifica aggiornamento attributo
+    verify(request, atLeastOnce()).setAttribute(eq("addresses"), same(addresses));
+
+    verify(dispatcherCliente).forward(request, response);
+}
+
 
     @Test
     void doGet_deleteAddress_removesAndDeletes() throws Exception {
@@ -300,29 +334,44 @@ class UtenteServletTest {
     }
 
     @Test
-    void doGet_modify_valid_callsDoModify() throws Exception {
-        when(utente.getEmail()).thenReturn("user@example.com");
-        when(utente.getUsername()).thenReturn("mario");
+void doGet_modify_valid_callsDoModify() throws Exception {
+    // usa un utente REALE per far “pesare” i setter e uccidere i mutants
+    utenteBean realUser = new utenteBean();
+    realUser.setUsername("mario");
+    realUser.setEmail("user@example.com");
+    when(session.getAttribute("utente")).thenReturn(realUser);
 
-        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
-        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+    when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+    when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
 
-        when(request.getParameter("action")).thenReturn("modify");
+    when(request.getParameter("action")).thenReturn("modify");
 
-        when(request.getParameter("nome")).thenReturn("Mario");
-        when(request.getParameter("cognome")).thenReturn("Rossi");
-        when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
-        when(request.getParameter("citta")).thenReturn("Napoli");
-        when(request.getParameter("provincia")).thenReturn("NA");
-        when(request.getParameter("cap")).thenReturn("80100");
-        when(request.getParameter("telefono")).thenReturn("123456789012");
-        when(request.getParameter("email")).thenReturn("mario.rossi@example.com");
+    when(request.getParameter("nome")).thenReturn("Mario");
+    when(request.getParameter("cognome")).thenReturn("Rossi");
+    when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
+    when(request.getParameter("citta")).thenReturn("Napoli");
+    when(request.getParameter("provincia")).thenReturn("NA");
+    when(request.getParameter("cap")).thenReturn("80100");
+    when(request.getParameter("telefono")).thenReturn("123456789012");
+    when(request.getParameter("email")).thenReturn("mario.rossi@example.com");
 
-        servlet.doGet(request, response);
+    servlet.doGet(request, response);
 
-        verify(clientModel).doModify(utente);
-        verify(dispatcherCliente).forward(request, response);
-    }
+    // verifica chiamata DAO con lo stesso oggetto utente
+    verify(clientModel).doModify(same(realUser));
+    verify(dispatcherCliente).forward(request, response);
+
+    // assert sullo stato: questi ammazzano i "removed call to utenteBean::setX"
+    assertEquals("Mario", realUser.getNome());
+    assertEquals("Rossi", realUser.getCognome());
+    assertEquals("Via Roma 10", realUser.getVia());
+    assertEquals("Napoli", realUser.getCitta());
+    assertEquals("NA", realUser.getProvincia());
+    assertEquals("80100", realUser.getCap());
+    assertEquals("123456789012", realUser.getTelefono());
+    assertEquals("mario.rossi@example.com", realUser.getEmail());
+}
+
 
     @Test
     void doGet_modify_sqlException_redirectsGeneralError() throws Exception {
