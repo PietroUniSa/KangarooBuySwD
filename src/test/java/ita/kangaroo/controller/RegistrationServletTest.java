@@ -305,4 +305,208 @@ class RegistrationServletTest {
 
         verify(dispatcher).forward(request, response);
     }
+
+    private void stubValidRegisterParams() {
+        when(request.getHeader("X-Requested-With")).thenReturn(null);
+        when(request.getParameter("action")).thenReturn("register");
+
+        when(request.getParameter("username")).thenReturn("mario_12");
+        when(request.getParameter("nome")).thenReturn("Mario");
+        when(request.getParameter("cognome")).thenReturn("Rossi");
+        when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta")).thenReturn("Napoli");
+        when(request.getParameter("provincia")).thenReturn("Napoli");
+        when(request.getParameter("cap")).thenReturn("80100");
+        when(request.getParameter("telefono")).thenReturn("123456789012");
+        when(request.getParameter("email")).thenReturn("mario@rossi.com");
+        when(request.getParameter("password")).thenReturn("abc123");
+    }
+    @Test
+    void ajaxUnknownAction_returnsJsonFalse() throws Exception {
+        RegistrationServlet s = servlet();
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("boh"); // non check / checkemail
+
+        StringWriter sw = mockJsonWriter();
+
+        s.doGet(request, response);
+
+        verify(response).setContentType("application/json");
+        assertEquals(new Gson().toJson(false), sw.toString());
+    }
+    @Test
+    void ajaxCheckEmail_emailNotExists_returnsJsonFalse() throws Exception {
+        RegistrationServlet s = servlet();
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("checkemail");
+        when(request.getParameter("email")).thenReturn("new@x.com");
+
+        clientDaoFake.byEmail = null;
+
+        StringWriter sw = mockJsonWriter();
+
+        s.doGet(request, response);
+
+        verify(response).setContentType("application/json");
+        assertEquals(new Gson().toJson(false), sw.toString());
+    }
+    @Test
+    void ajaxCheckEmail_sqlException_redirectsToGeneralError() throws Exception {
+        RegistrationServlet s = servlet();
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("checkemail");
+        when(request.getParameter("email")).thenReturn("x@y.com");
+
+        clientDaoFake.ex = new SQLException("DB down");
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+    @Test
+    void nonAjax_unknownAction_doesNothing() throws Exception {
+        RegistrationServlet s = servlet();
+        when(request.getHeader("X-Requested-With")).thenReturn(null);
+        when(request.getParameter("action")).thenReturn("whatever");
+
+        s.doGet(request, response);
+
+        verify(response, never()).sendRedirect(anyString());
+        verify(dispatcher, never()).forward(any(), any());
+    }
+
+    @Test
+    void register_invalidNome_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("nome")).thenReturn("Mario123"); // invalido
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+        verify(response, never()).sendRedirect(anyString());
+    }
+    @Test
+    void register_invalidPassword_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("password")).thenReturn("abcdef"); // niente цифre -> invalida
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void register_valid_userSaveSQLException_redirectsToGeneralError() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+
+        registerDaoFake.ex = new SQLException("boom");
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+    @Test
+    void register_invalidIndirizzo_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("indirizzo")).thenReturn("ViaRoma10"); // invalido
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+        verify(response, never()).sendRedirect(anyString());
+    }
+
+    @Test
+    void register_invalidCap_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("cap")).thenReturn("8010"); // 4 cifre -> KO
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void register_invalidTelefono_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("telefono")).thenReturn("12345678901"); // 11 cifre -> KO
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void register_nomeNull_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("nome")).thenReturn(null);
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void register_emailNull_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("email")).thenReturn(null);
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void register_indirizzoNull_callsSendError_andForwards() throws Exception {
+        RegistrationServlet s = servlet();
+        stubValidRegisterParams();
+        when(request.getParameter("indirizzo")).thenReturn(null);
+
+        when(servletContext.getRequestDispatcher("/registration.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("registration"));
+        verify(dispatcher).forward(request, response);
+    }
+    @Test
+    void ajaxCheckEmail_emptyEmail_returnsJsonFalse() throws Exception {
+        RegistrationServlet s = servlet();
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("checkemail");
+        when(request.getParameter("email")).thenReturn("");
+
+        clientDaoFake.byEmail = null;
+
+        StringWriter sw = mockJsonWriter();
+        s.doGet(request, response);
+
+        verify(response).setContentType("application/json");
+        assertEquals(new Gson().toJson(false), sw.toString());
+    }
+
 }

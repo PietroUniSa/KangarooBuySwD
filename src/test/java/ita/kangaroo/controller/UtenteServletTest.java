@@ -7,141 +7,305 @@ import ita.kangaroo.model.AddressBean;
 import ita.kangaroo.model.MetodoPagamentoBean;
 import ita.kangaroo.model.utenteBean;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UtenteServletTest {
 
-    private HttpServletRequest request;
-    private HttpServletResponse response;
-    private HttpSession session;
-    private ServletContext servletContext;
-    private RequestDispatcher dispatcher;
+    private UtenteServlet servlet;
 
-    // DAO mock (no DB, no DataSource)
-    private utenteDao clientDao;
-    private AddressDao addressDao;
-    private MetodoPagamentoDao paymentDao;
+    @Mock private HttpServletRequest request;
+    @Mock private HttpServletResponse response;
+    @Mock private HttpSession session;
+
+    @Mock private ServletConfig servletConfig;
+    @Mock private ServletContext servletContext;
+
+    @Mock private RequestDispatcher dispatcherCliente;
+    @Mock private RequestDispatcher dispatcherAdmin;
+
+    @Mock private utenteDao clientModel;
+    @Mock private AddressDao addressModel;
+    @Mock private MetodoPagamentoDao paymentModel;
+
+    private utenteBean utente;
 
     @BeforeEach
-    void setup() {
-        request = mock(HttpServletRequest.class);
-        response = mock(HttpServletResponse.class);
-        session = mock(HttpSession.class);
-        servletContext = mock(ServletContext.class);
-        dispatcher = mock(RequestDispatcher.class);
+    void setUp() throws Exception {
+        servlet = new UtenteServlet();
 
-        when(request.getSession()).thenReturn(session);
+        UtenteServlet.clientModel = clientModel;
+        UtenteServlet.addressmodel = addressModel;
+        UtenteServlet.paymentmodel = paymentModel;
 
-        clientDao = mock(utenteDao.class);
-        addressDao = mock(AddressDao.class);
-        paymentDao = mock(MetodoPagamentoDao.class);
+        // init container-like
+        lenient().when(servletConfig.getServletContext()).thenReturn(servletContext);
+        servlet.init(servletConfig);
 
-        // rewire static DAO nel servlet
-        UtenteServlet.clientModel = clientDao;
-        UtenteServlet.addressmodel = addressDao;
-        UtenteServlet.paymentmodel = paymentDao;
+        utente = mock(utenteBean.class);
+
+        lenient().when(request.getSession()).thenReturn(session);
+        lenient().when(session.getAttribute("utente")).thenReturn(utente);
+
+        lenient().when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcherCliente);
+        lenient().when(servletContext.getRequestDispatcher("/AdminServlet?action=clientsNoFilter"))
+                .thenReturn(dispatcherAdmin);
     }
-
-    private UtenteServlet servlet() {
-        UtenteServlet s = spy(new UtenteServlet());
-        doReturn(servletContext).when(s).getServletContext();
-        return s;
-    }
-
-    private utenteBean normalUser() {
-        utenteBean u = new utenteBean();
-        u.setUsername("mario");
-        u.setEmail("mario@example.com");
-        return u;
-    }
-
-    private utenteBean adminUser() {
-        utenteBean u = new utenteBean();
-        u.setUsername("admin");
-        u.setEmail("provoloni@example.com");
-        return u;
-    }
-
-    /**
-     * Stubbiamo un metodo che può ritornare int o boolean senza sapere la firma precisa,
-     * così evitiamo:
-     * - doNothing su non-void
-     * - thenReturn con tipo sbagliato
-     * - chiamate al DAO reale (DataSource not configured)
-     */
-    private static Object successForReturnType(Method m) {
-        Class<?> rt = m.getReturnType();
-        if (rt == boolean.class || rt == Boolean.class) return true;
-        if (rt == int.class || rt == Integer.class) return 1;
-        return null; // fallback (se fosse void o altro)
-    }
-
-    // =========================
-    // BASE FLOW
-    // =========================
 
     @Test
-    void whenNotLogged_redirectsToLogin() throws Exception {
-        UtenteServlet s = servlet();
+    void doGet_userNull_redirectsToLoginServlet() throws Exception {
         when(session.getAttribute("utente")).thenReturn(null);
 
-        s.doGet(request, response);
+        servlet.doGet(request, response);
 
         verify(response).sendRedirect("LoginServlet");
+        verifyNoInteractions(dispatcherCliente, dispatcherAdmin);
     }
 
     @Test
-    void whenAdmin_forwardsToAdminClientsNoFilter() throws Exception {
-        UtenteServlet s = servlet();
-        when(session.getAttribute("utente")).thenReturn(adminUser());
+    void doGet_adminUser_forwardsToAdminServlet() throws Exception {
+        when(utente.getEmail()).thenReturn("provoloni@example.com");
 
-        when(servletContext.getRequestDispatcher("/AdminServlet?action=clientsNoFilter")).thenReturn(dispatcher);
+        servlet.doGet(request, response);
 
-        s.doGet(request, response);
-
-        verify(dispatcher).forward(request, response);
-        verify(response, never()).sendRedirect(anyString());
+        verify(dispatcherAdmin).forward(request, response);
+        verify(dispatcherCliente, never()).forward(request, response);
     }
 
     @Test
-    void actionNull_forwardsClienteJsp_withAddressesAndPayments() throws Exception {
-        UtenteServlet s = servlet();
-        when(session.getAttribute("utente")).thenReturn(normalUser());
+    void doGet_noAction_forwardsClienteAndSetsLists() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
         when(request.getParameter("action")).thenReturn(null);
 
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
+        servlet.doGet(request, response);
 
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(request, atLeastOnce()).setAttribute(eq("addresses"), any(ArrayList.class));
-        verify(request, atLeastOnce()).setAttribute(eq("payments"), any(ArrayList.class));
-        verify(dispatcher).forward(request, response);
+        verify(request).setAttribute("addresses", addresses);
+        verify(request).setAttribute("payments", payments);
+        verify(dispatcherCliente).forward(request, response);
     }
 
-    // =========================
-    // MODIFY USER
-    // =========================
+    @Test
+    void doGet_modify_invalidName_triggersSendError_forwardCliente() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("modify");
+
+        when(request.getParameter("nome")).thenReturn("Ma1rio");
+        when(request.getParameter("cognome")).thenReturn("Rossi");
+        when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta")).thenReturn("Napoli");
+        when(request.getParameter("provincia")).thenReturn("NA");
+        when(request.getParameter("cap")).thenReturn("80100");
+        when(request.getParameter("telefono")).thenReturn("123456789012");
+        when(request.getParameter("email")).thenReturn("mario@rossi.com");
+
+        servlet.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("KangarooBuy ha riscontrato un problema"));
+        verify(dispatcherCliente).forward(request, response);
+        verify(clientModel, never()).doModify(any());
+    }
 
     @Test
-    void modify_valid_updatesUser_andForwardsClienteJsp() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
+    void doGet_addPaymentCard_valid_savesAndAddsToList() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("addPaymentCard");
+        when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
+        when(request.getParameter("cvv")).thenReturn("123");
+        when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
+        when(request.getParameter("circuito")).thenReturn("VISA");
+
+        when(paymentModel.doSave(any(MetodoPagamentoBean.class))).thenReturn(7);
+
+        servlet.doGet(request, response);
+
+        assertEquals(1, payments.size());
+        assertEquals(7, payments.get(0).getId());
+        verify(paymentModel).doSave(any(MetodoPagamentoBean.class));
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_deletePaymentCard_removesAndDeletes() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        MetodoPagamentoBean existing = new MetodoPagamentoBean();
+        existing.setId(99);
+        payments.add(existing);
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("deletePaymentCard");
+        when(request.getParameter("id_carta")).thenReturn("99");
+
+        when(paymentModel.doRetrieveByKey(99)).thenReturn(existing);
+
+        servlet.doGet(request, response);
+
+        assertTrue(payments.isEmpty());
+        verify(paymentModel).doDelete(99);
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_addAddress_valid_savesAndAddsToList() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("addAddress");
+        when(request.getParameter("via_indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta_indirizzo")).thenReturn("Napoli");
+        when(request.getParameter("CAP_indirizzo")).thenReturn("80100");
+
+        when(addressModel.doSave(any(AddressBean.class))).thenReturn(55);
+
+        servlet.doGet(request, response);
+
+        assertEquals(1, addresses.size());
+        assertEquals(55, addresses.get(0).getId());
+        verify(addressModel).doSave(any(AddressBean.class));
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_deleteAddress_removesAndDeletes() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        AddressBean existing = new AddressBean();
+        existing.setId(12);
+        addresses.add(existing);
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("deleteAddress");
+        when(request.getParameter("id_indirizzo")).thenReturn("12");
+
+        when(addressModel.doRetrieveByKey(12)).thenReturn(existing);
+
+        servlet.doGet(request, response);
+
+        assertTrue(addresses.isEmpty());
+        verify(addressModel).doDelete(12);
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_addressesSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+        verify(dispatcherCliente, never()).forward(request, response);
+    }
+
+    @Test
+    void doGet_paymentsSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+        verify(dispatcherCliente, never()).forward(request, response);
+    }
+    @Test
+    void doGet_emptyAction_forwardsCliente() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("");
+
+        servlet.doGet(request, response);
+
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_unknownAction_stillForwardsCliente() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("boh");
+
+        servlet.doGet(request, response);
+
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_modify_valid_callsDoModify() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
 
         when(request.getParameter("action")).thenReturn("modify");
 
@@ -152,201 +316,251 @@ class UtenteServletTest {
         when(request.getParameter("provincia")).thenReturn("NA");
         when(request.getParameter("cap")).thenReturn("80100");
         when(request.getParameter("telefono")).thenReturn("123456789012");
-        when(request.getParameter("email")).thenReturn("mario2@example.com");
+        when(request.getParameter("email")).thenReturn("mario.rossi@example.com");
 
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
+        servlet.doGet(request, response);
 
-        // doModify nel tuo progetto ritorna (quasi certamente) int, ma qui non rischiamo:
-        // se fosse boolean, basta cambiare sotto a true.
-        when(clientDao.doModify(any(utenteBean.class))).thenReturn(1);
-
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(clientDao).doModify(any(utenteBean.class));
-        verify(dispatcher).forward(request, response);
+        verify(clientModel).doModify(utente);
+        verify(dispatcherCliente).forward(request, response);
     }
 
-    // =========================
-    // ADD PAYMENT
-    // =========================
-
     @Test
-    void addPaymentCard_valid_savesAndAddsToPayments_thenForwards() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
+    void doGet_modify_sqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
 
-        when(request.getParameter("action")).thenReturn("addPaymentCard");
-
-        when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
-        when(request.getParameter("cvv")).thenReturn("123");
-        when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
-        when(request.getParameter("circuito")).thenReturn("VISA");
-
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-
-        when(paymentDao.doSave(any(MetodoPagamentoBean.class))).thenReturn(77);
-
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(paymentDao).doSave(any(MetodoPagamentoBean.class));
-        verify(request, atLeastOnce()).setAttribute(eq("payments"), any(ArrayList.class));
-        verify(dispatcher).forward(request, response);
-    }
-
-    // =========================
-    // DELETE PAYMENT  ✅ FIX DataSource
-    // =========================
-
-    @Test
-    void deletePaymentCard_valid_retrievesRemovesAndDeletes_thenForwards() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
-
-        when(request.getParameter("action")).thenReturn("deletePaymentCard");
-        when(request.getParameter("id_carta")).thenReturn("10");
-
-        ArrayList<AddressBean> addresses = new ArrayList<>();
-        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
-
-        MetodoPagamentoBean card = new MetodoPagamentoBean();
-        card.setId(10);
-        payments.add(card);
-
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(addresses);
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(payments);
-
-        when(paymentDao.doRetrieveByKey(10)).thenReturn(card);
-
-        // >>> IMPORTANTISSIMO: stub doDelete senza chiamare quello reale
-        doAnswer(inv -> successForReturnType(inv.getMethod()))
-                .when(paymentDao).doDelete(anyInt());
-
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(paymentDao).doDelete(10);
-        verify(request, atLeastOnce()).setAttribute(eq("payments"), any(ArrayList.class));
-        verify(dispatcher).forward(request, response);
-    }
-
-    // =========================
-    // ADD ADDRESS
-    // =========================
-
-    @Test
-    void addAddress_valid_savesAndAddsToAddresses_thenForwards() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
-
-        when(request.getParameter("action")).thenReturn("addAddress");
-        when(request.getParameter("via_indirizzo")).thenReturn("Via Milano 12");
-        when(request.getParameter("citta_indirizzo")).thenReturn("Roma");
-        when(request.getParameter("CAP_indirizzo")).thenReturn("00100");
-
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-
-        when(addressDao.doSave(any(AddressBean.class))).thenReturn(55);
-
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(addressDao).doSave(any(AddressBean.class));
-        verify(request, atLeastOnce()).setAttribute(eq("addresses"), any(ArrayList.class));
-        verify(dispatcher).forward(request, response);
-    }
-
-    // =========================
-    // DELETE ADDRESS ✅ FIX DataSource
-    // =========================
-
-    @Test
-    void deleteAddress_valid_retrievesRemovesAndDeletes_thenForwards() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
-
-        when(request.getParameter("action")).thenReturn("deleteAddress");
-        when(request.getParameter("id_indirizzo")).thenReturn("5");
-
-        ArrayList<AddressBean> addresses = new ArrayList<>();
-        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
-
-        AddressBean a = new AddressBean();
-        a.setId(5);
-        addresses.add(a);
-
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(addresses);
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(payments);
-
-        when(addressDao.doRetrieveByKey(5)).thenReturn(a);
-
-        // >>> IMPORTANTISSIMO: stub doDelete senza chiamare quello reale
-        doAnswer(inv -> successForReturnType(inv.getMethod()))
-                .when(addressDao).doDelete(anyInt());
-
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(addressDao).doDelete(5);
-        verify(request, atLeastOnce()).setAttribute(eq("addresses"), any(ArrayList.class));
-        verify(dispatcher).forward(request, response);
-    }
-
-    // =========================
-    // ERROR PATH
-    // =========================
-
-    @Test
-    void modify_invalid_triggersSendError_andForwards() throws Exception {
-        UtenteServlet s = servlet();
-        utenteBean u = normalUser();
-        when(session.getAttribute("utente")).thenReturn(u);
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
 
         when(request.getParameter("action")).thenReturn("modify");
 
-        // nome invalido
-        when(request.getParameter("nome")).thenReturn("Mario123");
+        when(request.getParameter("nome")).thenReturn("Mario");
         when(request.getParameter("cognome")).thenReturn("Rossi");
         when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
         when(request.getParameter("citta")).thenReturn("Napoli");
         when(request.getParameter("provincia")).thenReturn("NA");
         when(request.getParameter("cap")).thenReturn("80100");
         when(request.getParameter("telefono")).thenReturn("123456789012");
-        when(request.getParameter("email")).thenReturn("mario@example.com");
+        when(request.getParameter("email")).thenReturn("mario.rossi@example.com");
 
-        when(addressDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
-        when(paymentDao.doRetrieveByClient(anyString())).thenReturn(new ArrayList<>());
+        doThrow(new SQLException("boom")).when(clientModel).doModify(utente);
 
-        when(servletContext.getRequestDispatcher("/Cliente.jsp")).thenReturn(dispatcher);
-
-        s.doGet(request, response);
-
-        verify(request, atLeastOnce()).setAttribute(eq("error"), anyString());
-        verify(dispatcher).forward(request, response);
-    }
-
-    @Test
-    void addressRetrieve_sqlException_redirectsGeneralError() throws Exception {
-        UtenteServlet s = servlet();
-        when(session.getAttribute("utente")).thenReturn(normalUser());
-
-        when(addressDao.doRetrieveByClient(anyString())).thenThrow(new SQLException("DB down"));
-
-        s.doGet(request, response);
+        servlet.doGet(request, response);
 
         verify(response).sendRedirect("./ErrorPage/generalError.jsp");
     }
+
+    @Test
+    void doGet_addPaymentCard_invalidCvv_triggersSendError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("addPaymentCard");
+        when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
+        when(request.getParameter("cvv")).thenReturn("12"); // invalido
+        when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
+        when(request.getParameter("circuito")).thenReturn("VISA");
+
+        servlet.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("compila il form"));
+        verify(dispatcherCliente).forward(request, response);
+        verify(paymentModel, never()).doSave(any());
+    }
+
+    @Test
+    void doGet_addAddress_invalidCap_triggersSendError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("addAddress");
+        when(request.getParameter("via_indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta_indirizzo")).thenReturn("Napoli");
+        when(request.getParameter("CAP_indirizzo")).thenReturn("8010"); // invalido
+
+        servlet.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("compila il form"));
+        verify(dispatcherCliente).forward(request, response);
+        verify(addressModel, never()).doSave(any());
+    }
+
+    @Test
+    void doGet_deletePaymentCard_retrieveSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("deletePaymentCard");
+        when(request.getParameter("id_carta")).thenReturn("99");
+
+        when(paymentModel.doRetrieveByKey(99)).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doGet_deleteAddress_deleteSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        AddressBean existing = new AddressBean();
+        existing.setId(12);
+        addresses.add(existing);
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("deleteAddress");
+        when(request.getParameter("id_indirizzo")).thenReturn("12");
+
+        when(addressModel.doRetrieveByKey(12)).thenReturn(existing);
+        doThrow(new SQLException("boom")).when(addressModel).doDelete(12);
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doPost_delegatesToDoGet() throws Exception {
+        // evita NPE dentro doGet
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(request.getParameter("action")).thenReturn(null);
+
+        UtenteServlet spyServlet = spy(servlet);
+
+        spyServlet.doPost(request, response);
+
+        verify(spyServlet).doGet(request, response);
+    }
+
+
+    @Test
+    void doGet_deletePaymentCard_deleteSqlException_stillForwardsCliente() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        ArrayList<AddressBean> addresses = new ArrayList<>();
+        ArrayList<MetodoPagamentoBean> payments = new ArrayList<>();
+
+        MetodoPagamentoBean existing = new MetodoPagamentoBean();
+        existing.setId(99);
+        payments.add(existing);
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(addresses);
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(payments);
+
+        when(request.getParameter("action")).thenReturn("deletePaymentCard");
+        when(request.getParameter("id_carta")).thenReturn("99");
+
+        when(paymentModel.doRetrieveByKey(99)).thenReturn(existing);
+        doThrow(new SQLException("boom")).when(paymentModel).doDelete(99);
+
+        servlet.doGet(request, response);
+
+        // non redirecta, logga soltanto e continua
+        verify(dispatcherCliente).forward(request, response);
+    }
+
+    @Test
+    void doGet_addPaymentCard_saveSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("addPaymentCard");
+        when(request.getParameter("numero_carta")).thenReturn("4111111111111111");
+        when(request.getParameter("cvv")).thenReturn("123");
+        when(request.getParameter("data_scadenza")).thenReturn("2030-12-31");
+        when(request.getParameter("circuito")).thenReturn("VISA");
+
+        when(paymentModel.doSave(any(MetodoPagamentoBean.class))).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doGet_addAddress_saveSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("addAddress");
+        when(request.getParameter("via_indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta_indirizzo")).thenReturn("Napoli");
+        when(request.getParameter("CAP_indirizzo")).thenReturn("80100");
+
+        when(addressModel.doSave(any(AddressBean.class))).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doGet_deleteAddress_retrieveSqlException_redirectsGeneralError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("deleteAddress");
+        when(request.getParameter("id_indirizzo")).thenReturn("12");
+
+        when(addressModel.doRetrieveByKey(12)).thenThrow(new SQLException("boom"));
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doGet_modify_invalidTelefono_triggersSendError() throws Exception {
+        when(utente.getEmail()).thenReturn("user@example.com");
+        when(utente.getUsername()).thenReturn("mario");
+
+        when(addressModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+        when(paymentModel.doRetrieveByClient("mario")).thenReturn(new ArrayList<>());
+
+        when(request.getParameter("action")).thenReturn("modify");
+
+        when(request.getParameter("nome")).thenReturn("Mario");
+        when(request.getParameter("cognome")).thenReturn("Rossi");
+        when(request.getParameter("indirizzo")).thenReturn("Via Roma 10");
+        when(request.getParameter("citta")).thenReturn("Napoli");
+        when(request.getParameter("provincia")).thenReturn("NA");
+        when(request.getParameter("cap")).thenReturn("80100");
+        when(request.getParameter("telefono")).thenReturn("123"); // invalido
+        when(request.getParameter("email")).thenReturn("mario.rossi@example.com");
+
+        servlet.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("compila il form"));
+        verify(dispatcherCliente).forward(request, response);
+        verify(clientModel, never()).doModify(any());
+    }
+
 }

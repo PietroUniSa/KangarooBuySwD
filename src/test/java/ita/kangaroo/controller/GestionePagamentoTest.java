@@ -292,4 +292,342 @@ class GestionePagamentoTest {
 
         verify(response).sendRedirect("./ErrorPage/generalError.jsp");
     }
+    @Test
+    void actionEmpty_forwardsToCheckout() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("");
+
+        when(servletContext.getRequestDispatcher("/checkout.jsp")).thenReturn(dispatcher);
+
+        s.doGet(request, response);
+
+        verify(dispatcher).forward(request, response);
+        verify(response, never()).sendRedirect(anyString());
+    }
+
+    @Test
+    void invalidSpedizione_callsSendError_andForwardsCheckout() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+
+        // parametri letti prima e durante la validazione
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("1");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Teleport"); // invalido
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(servletContext.getRequestDispatcher("/checkout.jsp")).thenReturn(dispatcher);
+
+        // lastOrder viene chiamata sempre prima del check cart nel tuo codice
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        // cart non vuoto: serve per non finire in cartError dopo lastOrder
+        Cart cart = mock(Cart.class);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(mock(CartProduct.class)); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("problema durante il pagamento"));
+        verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    void invalidNote_callsSendError_andForwardsCheckout() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("1");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota123"); // invalido (solo lettere/spazi)
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(servletContext.getRequestDispatcher("/checkout.jsp")).thenReturn(dispatcher);
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        Cart cart = mock(Cart.class);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(mock(CartProduct.class)); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("problema durante il pagamento"));
+        verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    void invalidMetodoPagamento_callsSendError_andForwardsCheckout() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("1");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("Bitcoin"); // invalido
+
+        when(servletContext.getRequestDispatcher("/checkout.jsp")).thenReturn(dispatcher);
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        Cart cart = mock(Cart.class);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(mock(CartProduct.class)); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        s.doGet(request, response);
+
+        verify(request).setAttribute(eq("error"), contains("problema durante il pagamento"));
+        verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    void confirmBuy_cartaEmpty_setsIdCartaZero_thenPaymentRetrieveSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        // cart con 1 prodotto coerente
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn(""); // ramo idcarta=0
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        // quando prova a fare doRetrieveByKey(0) fallisce -> generalError
+        when(paymentModel.doRetrieveByKey(0)).thenThrow(new SQLException("no card"));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void confirmBuy_paymentCircuitSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        // primo retrieve (circuito) lancia
+        when(paymentModel.doRetrieveByKey(1)).thenThrow(new SQLException("boom"));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void confirmBuy_paymentNumeroSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        // prima chiamata ok, seconda esplode
+        MetodoPagamentoBean mp = new MetodoPagamentoBean();
+        mp.setCircuito("VISA");
+        when(paymentModel.doRetrieveByKey(1)).thenReturn(mp)
+                .thenThrow(new SQLException("boom2"));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void confirmBuy_addressRetrieveSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        MetodoPagamentoBean mp = new MetodoPagamentoBean();
+        mp.setCircuito("VISA");
+        mp.setNumero_carta("4111111111111111");
+        when(paymentModel.doRetrieveByKey(1)).thenReturn(mp);
+
+        when(addressModel.doRetrieveByKey(2)).thenThrow(new SQLException("boom"));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void confirmBuy_orderSaveSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Standard");
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        MetodoPagamentoBean mp = new MetodoPagamentoBean();
+        mp.setCircuito("VISA");
+        mp.setNumero_carta("4111111111111111");
+        when(paymentModel.doRetrieveByKey(1)).thenReturn(mp);
+
+        AddressBean ab = new AddressBean();
+        ab.setVia("Via Roma");
+        ab.setCitta("Napoli");
+        when(addressModel.doRetrieveByKey(2)).thenReturn(ab);
+
+        // forza eccezione nel blocco try principale
+        doThrow(new SQLException("boom")).when(orderModel).doSave(any(OrdineBean.class));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void confirmBuy_invoiceSaveSqlException_redirectsGeneralError() throws Exception {
+        GestionePagamento s = servlet();
+        when(request.getParameter("action")).thenReturn("confirm_buy");
+        when(session.getAttribute("utente")).thenReturn(loggedUser());
+
+        Cart cart = mock(Cart.class);
+        CartProduct cp = mock(CartProduct.class);
+        ProdottoBean prod = new ProdottoBean();
+        prod.setId(10); prod.setPrezzo(10f); prod.setIva(22f); prod.setQuantita(10);
+        when(cp.getProduct()).thenReturn(prod);
+        when(cp.getQuantity()).thenReturn(1);
+        when(cart.getProducts()).thenReturn(new ArrayList<>() {{ add(cp); }});
+        when(session.getAttribute("cart")).thenReturn(cart);
+
+        when(request.getParameter("carta")).thenReturn("1");
+        when(request.getParameter("indirizzo")).thenReturn("2");
+        when(request.getParameter("destinatario")).thenReturn("Mario Rossi");
+        when(request.getParameter("note")).thenReturn("Nota");
+        when(request.getParameter("spedizione")).thenReturn("Express"); // per coprire totale+5
+        when(request.getParameter("metodo_di_pagamento")).thenReturn("carta_di_credito");
+
+        when(orderModel.lastOrder()).thenReturn(null);
+
+        MetodoPagamentoBean mp = new MetodoPagamentoBean();
+        mp.setCircuito("VISA");
+        mp.setNumero_carta("4111111111111111");
+        when(paymentModel.doRetrieveByKey(1)).thenReturn(mp);
+
+        AddressBean ab = new AddressBean();
+        ab.setVia("Via Roma");
+        ab.setCitta("Napoli");
+        when(addressModel.doRetrieveByKey(2)).thenReturn(ab);
+
+        ProdottoBean prodDb = new ProdottoBean();
+        prodDb.setId(10);
+        prodDb.setQuantita(10);
+        when(prodottoModel.doRetrieveByKey(10)).thenReturn(prodDb);
+
+        doNothing().when(orderModel).doSave(any(OrdineBean.class));
+        doNothing().when(prodottoModel).updateQuantity(anyInt(), anyInt());
+
+        doThrow(new SQLException("invoice boom")).when(invoiceModel).doSave(any(FatturazioneBean.class));
+
+        s.doGet(request, response);
+
+        verify(response).sendRedirect("./ErrorPage/generalError.jsp");
+    }
+
+    @Test
+    void doPost_delegatesToDoGet_withoutExecutingDoGet() throws Exception {
+        GestionePagamento s = spy(new GestionePagamento());
+        doReturn(servletContext).when(s).getServletContext();
+        doNothing().when(s).doGet(any(HttpServletRequest.class), any(HttpServletResponse.class));
+
+        s.doPost(request, response);
+
+        verify(s, times(1)).doGet(request, response);
+    }
+
+
+
+
+
 }
