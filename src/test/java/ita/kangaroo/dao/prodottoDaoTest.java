@@ -2,21 +2,21 @@ package ita.kangaroo.dao;
 
 import ita.kangaroo.model.ProdottoBean;
 import ita.kangaroo.model.tipo;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter. api.BeforeEach;
+import org.junit.jupiter. api.Test;
+import org.junit. jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org. mockito.junit. jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
-import java.sql.*;
+import java. lang.reflect.Field;
+import java. sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter. api.Assertions.*;
+import static org. mockito.ArgumentMatchers.*;
+import static org.mockito. Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class prodottoDaoTest {
@@ -52,7 +52,7 @@ class prodottoDaoTest {
         prod.setId(1);
         prod.setNome("Croccantini Premium");
         prod.setDescrizione("Croccantini per cani adulti");
-        prod.setPrezzo(25.99f);
+        prod.setPrezzo(25.99f); // Keep float, but expect double conversion in tests
         prod.setQuantita(100);
         prod.setTipo(tipo.cibo);
         prod.setIva(22.0f);
@@ -60,15 +60,37 @@ class prodottoDaoTest {
         return prod;
     }
 
+
     private void setupResultSetForProduct() throws SQLException {
-        when(mockResultSet.getInt("Id")).thenReturn(1);
+        when(mockResultSet. getInt("Id")).thenReturn(1);
         when(mockResultSet.getString("Nome")).thenReturn("Croccantini Premium");
         when(mockResultSet.getString("Descrizione")).thenReturn("Croccantini per cani adulti");
         when(mockResultSet.getFloat("Prezzo")).thenReturn(25.99f);
-        when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(100);
-        when(mockResultSet.getString("Tipo")).thenReturn("cibo"); // cambiato da "Cibo" a "cibo"
+        when(mockResultSet. getInt("QuantitaDisponibile")).thenReturn(100);
+        when(mockResultSet.getString("Tipo")).thenReturn("cibo");
         when(mockResultSet.getFloat("IVA")).thenReturn(22.0f);
         when(mockResultSet.getString("immagine")).thenReturn("croccantini.jpg");
+    }
+
+    /**
+     * Helper method to verify ALL fields of a ProdottoBean are properly set.
+     * This is crucial for achieving high mutation coverage by killing SURVIVED mutations.
+     */
+    private void assertCompleteProdottoBean(ProdottoBean prod, int expectedId, String expectedNome,
+                                            String expectedDescrizione, float expectedPrezzo,
+                                            int expectedQuantita, tipo expectedTipo,
+                                            float expectedIva, String expectedImmagine) {
+        // Verify ID and basic info (usually already tested)
+        assertEquals(expectedId, prod. getId(), "Product ID mismatch");
+        assertEquals(expectedNome, prod. getNome(), "Product name mismatch");
+
+        // Critical: Verify ALL these fields to kill SURVIVED mutations
+        assertEquals(expectedDescrizione, prod.getDescrizione(), "Product description mismatch"); // Lines 171, 214, 295, 362, 402
+        assertEquals(expectedPrezzo, prod. getPrezzo(), 0.001, "Product price mismatch");         // Lines 172, 215, 296, 363, 403
+        assertEquals(expectedQuantita, prod.getQuantita(), "Product quantity mismatch");          // Lines 173, 216, 297, 364, 404
+        assertEquals(expectedTipo, prod.getTipo(), "Product type mismatch");                      // Lines 174, 217, 365, 405
+        assertEquals(expectedIva, prod. getIva(), 0.001, "Product IVA mismatch");                 // Lines 175, 218, 299, 366, 406
+        assertEquals(expectedImmagine, prod.getImmagine(), "Product image mismatch");             // Lines 176, 219, 300, 367, 407
     }
 
     // === TESTS FOR doSave() ===
@@ -78,7 +100,6 @@ class prodottoDaoTest {
         // Arrange
         ProdottoBean prod = createValidProdottoBean();
         int expectedId = 42;
-
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
                 .thenReturn(mockPreparedStatement);
@@ -92,31 +113,36 @@ class prodottoDaoTest {
 
         // Assert
         assertEquals(expectedId, result);
+
+        // ✅ Usa matcher per double values
         verify(mockPreparedStatement).setInt(1, 1);
         verify(mockPreparedStatement).setString(2, "Croccantini Premium");
         verify(mockPreparedStatement).setString(3, "Croccantini per cani adulti");
-        verify(mockPreparedStatement).setDouble(4, 25.99f);
+        verify(mockPreparedStatement).setDouble(eq(4), doubleThat(d -> Math.abs(d - 25.99) < 0.01));
         verify(mockPreparedStatement).setInt(5, 100);
-        verify(mockPreparedStatement).setString(6, "cibo"); // era sulla posizione sbagliata
-        verify(mockPreparedStatement).setDouble(7, 22.0f);
+        verify(mockPreparedStatement).setString(6, "cibo");
+        verify(mockPreparedStatement).setDouble(7, 22.0d);
         verify(mockPreparedStatement).setString(8, "croccantini.jpg");
         verify(mockPreparedStatement).executeUpdate();
     }
+
+
+
 
     @Test
     void testDoSave_NoGeneratedKey_ReturnsMinusOne() throws SQLException {
         // Arrange
         ProdottoBean prod = createValidProdottoBean();
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString(), eq(Statement. RETURN_GENERATED_KEYS)))
                 .thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenReturn(1);
         when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        int result = prodottoDao.doSave(prod);
+        int result = prodottoDao. doSave(prod);
 
         // Assert
         assertEquals(-1, result);
@@ -131,7 +157,7 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
         // Act & Assert
-        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doSave(prod));
+        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao. doSave(prod));
         assertEquals("Connection failed", exception.getMessage());
     }
 
@@ -141,8 +167,8 @@ class prodottoDaoTest {
         ProdottoBean prod = createValidProdottoBean();
         SQLException expectedException = new SQLException("Execute update failed");
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString(), eq(Statement. RETURN_GENERATED_KEYS)))
                 .thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenThrow(expectedException);
 
@@ -164,7 +190,7 @@ class prodottoDaoTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        prodottoDao.doSave(prod);
+        prodottoDao. doSave(prod);
 
         // Assert
         verify(mockPreparedStatement).close();
@@ -187,16 +213,10 @@ class prodottoDaoTest {
         // Act
         ProdottoBean result = prodottoDao.doRetrieveByKey(id);
 
-        // Assert
+        // Assert - Complete verification to kill ALL setter mutations
         assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("Croccantini Premium", result.getNome());
-        assertEquals("Croccantini per cani adulti", result.getDescrizione());
-        assertEquals(25.99f, result.getPrezzo(), 0.001);
-        assertEquals(100, result.getQuantita());
-        assertEquals(tipo.cibo, result.getTipo());
-        assertEquals(22.0f, result.getIva(), 0.001);
-        assertEquals("croccantini.jpg", result.getImmagine());
+        assertCompleteProdottoBean(result, 1, "Croccantini Premium", "Croccantini per cani adulti",
+                25.99f, 100, tipo.cibo, 22.0f, "croccantini.jpg");
         verify(mockPreparedStatement).setInt(1, id);
     }
 
@@ -211,7 +231,7 @@ class prodottoDaoTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        ProdottoBean result = prodottoDao.doRetrieveByKey(id);
+        ProdottoBean result = prodottoDao. doRetrieveByKey(id);
 
         // Assert
         assertNull(result);
@@ -225,16 +245,16 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
         // Act & Assert
-        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doRetrieveByKey(1));
+        SQLException exception = assertThrows(SQLException. class, () -> prodottoDao. doRetrieveByKey(1));
         assertEquals("Query failed", exception.getMessage());
     }
 
     @Test
     void testDoRetrieveByKey_ResourcesClosed() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
@@ -253,7 +273,7 @@ class prodottoDaoTest {
         int id = 1;
 
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenReturn(1);
 
         // Act
@@ -274,7 +294,7 @@ class prodottoDaoTest {
         when(mockPreparedStatement.executeUpdate()).thenReturn(0);
 
         // Act
-        boolean result = prodottoDao.doDelete(id);
+        boolean result = prodottoDao. doDelete(id);
 
         // Assert
         assertFalse(result);
@@ -285,7 +305,7 @@ class prodottoDaoTest {
     void testDoDelete_SQLException_Propagated() throws SQLException {
         // Arrange
         SQLException expectedException = new SQLException("Delete failed");
-        when(mockDataSource.getConnection()).thenThrow(expectedException);
+        when(mockDataSource. getConnection()).thenThrow(expectedException);
 
         // Act & Assert
         SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doDelete(1));
@@ -312,30 +332,35 @@ class prodottoDaoTest {
     @Test
     void testDoRetrieveAll_MultipleProducts_ReturnsList() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, true, false);
 
-        when(mockResultSet.getInt("Id")).thenReturn(1, 2);
+        // Setup complete data for two products to kill SURVIVED mutations (lines 171-176)
+        when(mockResultSet. getInt("Id")).thenReturn(1, 2);
         when(mockResultSet.getString("Nome")).thenReturn("Prodotto 1", "Prodotto 2");
-        when(mockResultSet.getString("Descrizione")).thenReturn("Descrizione 1", "Descrizione 2");
+        when(mockResultSet. getString("Descrizione")).thenReturn("Descrizione 1", "Descrizione 2");
         when(mockResultSet.getFloat("Prezzo")).thenReturn(10.0f, 20.0f);
         when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(50, 100);
         when(mockResultSet.getString("Tipo")).thenReturn("cibo", "accessorio");
-        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f, 22.0f);
+        when(mockResultSet. getFloat("IVA")).thenReturn(22.0f, 10.0f);
         when(mockResultSet.getString("immagine")).thenReturn("img1.jpg", "img2.jpg");
 
         // Act
         List<ProdottoBean> result = prodottoDao.doRetrieveAll();
 
-        // Assert
+        // Assert - Complete verification to kill SURVIVED mutations (lines 171-176)
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(1, result.get(0).getId());
-        assertEquals("Prodotto 1", result.get(0).getNome());
-        assertEquals(2, result.get(1).getId());
-        assertEquals("Prodotto 2", result.get(1).getNome());
+
+        // Verify first product completely
+        assertCompleteProdottoBean(result. get(0), 1, "Prodotto 1", "Descrizione 1",
+                10.0f, 50, tipo.cibo, 22.0f, "img1.jpg");
+
+        // Verify second product completely
+        assertCompleteProdottoBean(result.get(1), 2, "Prodotto 2", "Descrizione 2",
+                20.0f, 100, tipo. accessorio, 10.0f, "img2.jpg");
     }
 
     @Test
@@ -347,7 +372,7 @@ class prodottoDaoTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        List<ProdottoBean> result = prodottoDao.doRetrieveAll();
+        List<ProdottoBean> result = prodottoDao. doRetrieveAll();
 
         // Assert
         assertNotNull(result);
@@ -361,7 +386,7 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
         // Act & Assert
-        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doRetrieveAll());
+        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao. doRetrieveAll());
         assertEquals("Query failed", exception.getMessage());
     }
 
@@ -371,10 +396,10 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(false);
+        when(mockResultSet. next()).thenReturn(false);
 
         // Act
-        prodottoDao.doRetrieveAll();
+        prodottoDao. doRetrieveAll();
 
         // Assert
         verify(mockPreparedStatement).close();
@@ -387,25 +412,34 @@ class prodottoDaoTest {
     void testDoRetrieveAllLimit_ReturnsMaxTenProducts() throws SQLException {
         // Arrange
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, true, true, false);
 
+        // Setup complete data to kill ALL SURVIVED mutations (lines 212-219)
         when(mockResultSet.getInt("Id")).thenReturn(1, 2, 3);
         when(mockResultSet.getString("Nome")).thenReturn("Prodotto 1", "Prodotto 2", "Prodotto 3");
         when(mockResultSet.getString("Descrizione")).thenReturn("Desc 1", "Desc 2", "Desc 3");
         when(mockResultSet.getFloat("Prezzo")).thenReturn(10.0f, 20.0f, 30.0f);
         when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(50, 100, 150);
-        when(mockResultSet.getString("Tipo")).thenReturn("cibo", "accessorio", "animale");
-        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f, 22.0f, 22.0f);
+        when(mockResultSet. getString("Tipo")).thenReturn("cibo", "accessorio", "animale");
+        when(mockResultSet. getFloat("IVA")).thenReturn(22.0f, 10.0f, 4.0f);
         when(mockResultSet.getString("immagine")).thenReturn("img1.jpg", "img2.jpg", "img3.jpg");
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllLimit();
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllLimit();
 
-        // Assert
+        // Assert - Complete verification to kill ALL SURVIVED mutations (lines 212-219)
         assertNotNull(result);
         assertEquals(3, result.size());
+
+        // Verify all products completely to kill ALL setter mutations
+        assertCompleteProdottoBean(result. get(0), 1, "Prodotto 1", "Desc 1",
+                10.0f, 50, tipo.cibo, 22.0f, "img1.jpg");
+        assertCompleteProdottoBean(result.get(1), 2, "Prodotto 2", "Desc 2",
+                20.0f, 100, tipo.accessorio, 10.0f, "img2.jpg");
+        assertCompleteProdottoBean(result.get(2), 3, "Prodotto 3", "Desc 3",
+                30.0f, 150, tipo.animale, 4.0f, "img3.jpg");
     }
 
     @Test
@@ -417,22 +451,38 @@ class prodottoDaoTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllLimit();
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllLimit();
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertTrue(result. isEmpty());
     }
 
     @Test
     void testDoRetrieveAllLimit_SQLException_Propagated() throws SQLException {
         // Arrange
         SQLException expectedException = new SQLException("Query failed");
-        when(mockDataSource.getConnection()).thenThrow(expectedException);
+        when(mockDataSource. getConnection()).thenThrow(expectedException);
 
         // Act & Assert
         SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doRetrieveAllLimit());
         assertEquals("Query failed", exception.getMessage());
+    }
+
+    @Test
+    void testDoRetrieveAllLimit_ResourcesClosed() throws SQLException {
+        // Arrange
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        prodottoDao.doRetrieveAllLimit();
+
+        // Assert - Verify resources are closed to kill line 227, 229, 230 mutations
+        verify(mockPreparedStatement).close();
+        verify(mockConnection).close();
     }
 
     // === TESTS FOR doModify() ===
@@ -441,7 +491,6 @@ class prodottoDaoTest {
     void testDoModify_ExistingProduct_ReturnsTrue() throws SQLException {
         // Arrange
         ProdottoBean prod = createValidProdottoBean();
-
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenReturn(1);
@@ -451,15 +500,19 @@ class prodottoDaoTest {
 
         // Assert
         assertTrue(result);
-        verify(mockPreparedStatement).setString(1, "Croccantini Premium");
-        verify(mockPreparedStatement).setString(2, "Croccantini per cani adulti");
-        verify(mockPreparedStatement).setDouble(3, 25.99f);
-        verify(mockPreparedStatement).setInt(4, 100);
-        verify(mockPreparedStatement).setString(5, "cibo");
-        verify(mockPreparedStatement).setDouble(6, 22.0f);
-        verify(mockPreparedStatement).setString(7, "croccantini.jpg");
-        verify(mockPreparedStatement).setInt(8, 1);
+
+        // ✅ CORRETTO: Ordine dei parametri per doModify
+        verify(mockPreparedStatement).setString(1, "Croccantini Premium");       // Nome
+        verify(mockPreparedStatement).setString(2, "Croccantini per cani adulti"); // Descrizione
+        verify(mockPreparedStatement).setDouble(3, 25.989999771118164d);          // Prezzo (valore preciso)
+        verify(mockPreparedStatement).setInt(4, 100);                             // Quantita
+        verify(mockPreparedStatement).setString(5, "cibo");                       // Tipo
+        verify(mockPreparedStatement).setDouble(6, 22.0d);                        // IVA
+        verify(mockPreparedStatement).setString(7, "croccantini.jpg");            // Immagine
+        verify(mockPreparedStatement).setInt(8, 1);                               // ID (WHERE clause)
+        verify(mockPreparedStatement).executeUpdate();
     }
+
 
     @Test
     void testDoModify_NonExistingProduct_ReturnsFalse() throws SQLException {
@@ -472,7 +525,7 @@ class prodottoDaoTest {
         when(mockPreparedStatement.executeUpdate()).thenReturn(0);
 
         // Act
-        boolean result = prodottoDao.doModify(prod);
+        boolean result = prodottoDao. doModify(prod);
 
         // Assert
         assertFalse(result);
@@ -483,7 +536,7 @@ class prodottoDaoTest {
         // Arrange
         ProdottoBean prod = createValidProdottoBean();
         SQLException expectedException = new SQLException("Update failed");
-        when(mockDataSource.getConnection()).thenThrow(expectedException);
+        when(mockDataSource. getConnection()).thenThrow(expectedException);
 
         // Act & Assert
         SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doModify(prod));
@@ -519,23 +572,29 @@ class prodottoDaoTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, true, false);
 
+        // Setup complete data to kill SURVIVED mutations (lines 293-300)
         when(mockResultSet.getInt("Id")).thenReturn(1, 2);
         when(mockResultSet.getString("Nome")).thenReturn("Croccantini", "Biscotti");
-        when(mockResultSet.getString("Descrizione")).thenReturn("Desc 1", "Desc 2");
+        when(mockResultSet.getString("Descrizione")).thenReturn("Desc croccantini", "Desc biscotti");
         when(mockResultSet.getFloat("Prezzo")).thenReturn(10.0f, 15.0f);
         when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(50, 60);
         when(mockResultSet.getString("Tipo")).thenReturn("cibo", "cibo");
-        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f, 22.0f);
+        when(mockResultSet. getFloat("IVA")).thenReturn(22.0f, 22.0f);
         when(mockResultSet.getString("immagine")).thenReturn("img1.jpg", "img2.jpg");
 
         // Act
         ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByCategory(category);
 
-        // Assert
+        // Assert - Complete verification to kill SURVIVED mutations (lines 293-300)
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(tipo.cibo, result.get(0).getTipo());
-        assertEquals(tipo.cibo, result.get(1).getTipo());
+
+        // Verify all fields to kill ALL setter mutations
+        assertCompleteProdottoBean(result.get(0), 1, "Croccantini", "Desc croccantini",
+                10.0f, 50, tipo.cibo, 22.0f, "img1.jpg");
+        assertCompleteProdottoBean(result.get(1), 2, "Biscotti", "Desc biscotti",
+                15.0f, 60, tipo.cibo, 22.0f, "img2.jpg");
+
         verify(mockPreparedStatement).setString(1, category);
     }
 
@@ -565,7 +624,7 @@ class prodottoDaoTest {
 
         // Act & Assert
         SQLException exception = assertThrows(SQLException.class,
-                () -> prodottoDao.doRetrieveAllByCategory("cibo"));
+                () -> prodottoDao. doRetrieveAllByCategory("cibo"));
         assertEquals("Query failed", exception.getMessage());
     }
 
@@ -573,7 +632,7 @@ class prodottoDaoTest {
     void testDoRetrieveAllByCategory_ResourcesClosed() throws SQLException {
         // Arrange
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
@@ -630,9 +689,9 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
         // Act & Assert
-        SQLException exception = assertThrows(SQLException.class,
+        SQLException exception = assertThrows(SQLException. class,
                 () -> prodottoDao.updateQuantity(1, 100));
-        assertEquals("Update failed", exception.getMessage());
+        assertEquals("Update failed", exception. getMessage());
     }
 
     @Test
@@ -659,17 +718,29 @@ class prodottoDaoTest {
         String query = "";
 
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
-        setupResultSetForProduct();
+
+        // Setup complete data to kill SURVIVED mutations (lines 360-367)
+        when(mockResultSet.getInt("Id")).thenReturn(1);
+        when(mockResultSet.getString("Nome")).thenReturn("Croccantini Premium");
+        when(mockResultSet.getString("Descrizione")).thenReturn("Croccantini per cani adulti");
+        when(mockResultSet.getFloat("Prezzo")).thenReturn(25.99f);
+        when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(100);
+        when(mockResultSet.getString("Tipo")).thenReturn("cibo");
+        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f);
+        when(mockResultSet.getString("immagine")).thenReturn("croccantini.jpg");
 
         // Act
         ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByKeyword(keyword, query);
 
-        // Assert
+        // Assert - Complete verification to kill SURVIVED mutations (lines 360-367)
         assertNotNull(result);
         assertEquals(1, result.size());
+
+        assertCompleteProdottoBean(result. get(0), 1, "Croccantini Premium", "Croccantini per cani adulti",
+                25.99f, 100, tipo.cibo, 22.0f, "croccantini.jpg");
     }
 
     @Test
@@ -681,10 +752,10 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(false);
+        when(mockResultSet. next()).thenReturn(false);
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByKeyword(keyword, query);
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllByKeyword(keyword, query);
 
         // Assert
         assertNotNull(result);
@@ -697,18 +768,29 @@ class prodottoDaoTest {
         String keyword = "cane";
         String query = " ORDER BY Prezzo ASC";
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
-        setupResultSetForProduct();
+
+        // Setup complete data
+        when(mockResultSet.getInt("Id")).thenReturn(1);
+        when(mockResultSet.getString("Nome")).thenReturn("Croccantini Premium");
+        when(mockResultSet.getString("Descrizione")).thenReturn("Croccantini per cani adulti");
+        when(mockResultSet.getFloat("Prezzo")).thenReturn(25.99f);
+        when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(100);
+        when(mockResultSet.getString("Tipo")).thenReturn("cibo");
+        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f);
+        when(mockResultSet.getString("immagine")).thenReturn("croccantini.jpg");
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByKeyword(keyword, query);
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllByKeyword(keyword, query);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.size());
+        assertEquals(1, result. size());
+        assertCompleteProdottoBean(result. get(0), 1, "Croccantini Premium", "Croccantini per cani adulti",
+                25.99f, 100, tipo.cibo, 22.0f, "croccantini.jpg");
     }
 
     @Test
@@ -719,7 +801,7 @@ class prodottoDaoTest {
 
         // Act & Assert
         SQLException exception = assertThrows(SQLException.class,
-                () -> prodottoDao.doRetrieveAllByKeyword("keyword", ""));
+                () -> prodottoDao. doRetrieveAllByKeyword("keyword", ""));
         assertEquals("Query failed", exception.getMessage());
     }
 
@@ -732,7 +814,7 @@ class prodottoDaoTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // Act
-        prodottoDao.doRetrieveAllByKeyword("keyword", "");
+        prodottoDao. doRetrieveAllByKeyword("keyword", "");
 
         // Assert
         verify(mockPreparedStatement).close();
@@ -750,15 +832,28 @@ class prodottoDaoTest {
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
-        setupResultSetForProduct();
+
+        // Setup complete data to kill SURVIVED mutations (lines 400-407)
+        when(mockResultSet.getInt("Id")).thenReturn(1);
+        when(mockResultSet.getString("Nome")).thenReturn("Croccantini Premium");
+        when(mockResultSet.getString("Descrizione")).thenReturn("Croccantini per cani adulti");
+        when(mockResultSet.getFloat("Prezzo")).thenReturn(25.99f);
+        when(mockResultSet.getInt("QuantitaDisponibile")).thenReturn(100);
+        when(mockResultSet.getString("Tipo")).thenReturn("cibo");
+        when(mockResultSet.getFloat("IVA")).thenReturn(22.0f);
+        when(mockResultSet.getString("immagine")).thenReturn("croccantini.jpg");
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByName(keyword);
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllByName(keyword);
 
-        // Assert
+        // Assert - Complete verification to kill SURVIVED mutations (lines 400-407)
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertTrue(result.get(0).getNome().startsWith("Crocc"));
+        assertEquals(1, result. size());
+
+        ProdottoBean product = result.get(0);
+        assertTrue(product.getNome().startsWith("Crocc"));
+        assertCompleteProdottoBean(product, 1, "Croccantini Premium", "Croccantini per cani adulti",
+                25.99f, 100, tipo.cibo, 22.0f, "croccantini.jpg");
     }
 
     @Test
@@ -769,10 +864,10 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(false);
+        when(mockResultSet. next()).thenReturn(false);
 
         // Act
-        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByName(keyword);
+        ArrayList<ProdottoBean> result = prodottoDao. doRetrieveAllByName(keyword);
 
         // Assert
         assertNotNull(result);
@@ -784,11 +879,20 @@ class prodottoDaoTest {
         // Arrange
         String keyword = "";
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
-        setupResultSetForProduct();
+
+        // Setup complete data
+        when(mockResultSet. getInt("Id")).thenReturn(1);
+        when(mockResultSet.getString("Nome")).thenReturn("Croccantini Premium");
+        when(mockResultSet.getString("Descrizione")).thenReturn("Croccantini per cani adulti");
+        when(mockResultSet.getFloat("Prezzo")).thenReturn(25.99f);
+        when(mockResultSet. getInt("QuantitaDisponibile")).thenReturn(100);
+        when(mockResultSet. getString("Tipo")).thenReturn("cibo");
+        when(mockResultSet. getFloat("IVA")).thenReturn(22.0f);
+        when(mockResultSet.getString("immagine")).thenReturn("croccantini.jpg");
 
         // Act
         ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByName(keyword);
@@ -796,6 +900,8 @@ class prodottoDaoTest {
         // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertCompleteProdottoBean(result.get(0), 1, "Croccantini Premium", "Croccantini per cani adulti",
+                25.99f, 100, tipo. cibo, 22.0f, "croccantini.jpg");
     }
 
     @Test
@@ -805,7 +911,7 @@ class prodottoDaoTest {
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
         // Act & Assert
-        SQLException exception = assertThrows(SQLException.class,
+        SQLException exception = assertThrows(SQLException. class,
                 () -> prodottoDao.doRetrieveAllByName("keyword"));
         assertEquals("Query failed", exception.getMessage());
     }
@@ -814,7 +920,7 @@ class prodottoDaoTest {
     void testDoRetrieveAllByName_ResourcesClosed() throws SQLException {
         // Arrange
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
@@ -831,15 +937,15 @@ class prodottoDaoTest {
     @Test
     void testSynchronizedBehavior_MultipleCalls_WorkCorrectly() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
         // Act - multiple synchronized calls
         List<ProdottoBean> result1 = prodottoDao.doRetrieveAll();
         ArrayList<ProdottoBean> result2 = prodottoDao.doRetrieveAllLimit();
-        ArrayList<ProdottoBean> result3 = prodottoDao.doRetrieveAllByCategory("cibo");
+        ArrayList<ProdottoBean> result3 = prodottoDao. doRetrieveAllByCategory("cibo");
 
         // Assert
         assertNotNull(result1);
@@ -899,5 +1005,26 @@ class prodottoDaoTest {
         // Assert
         verify(mockPreparedStatement).setInt(1, -10);
     }
-}
+    @Test
+    void testDoSave_ConnectionCloseException_HandledCorrectly() throws SQLException {
+        // Test per coprire il mutante SURVIVED alla riga 74
+        ProdottoBean prod = createValidProdottoBean();
 
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+                .thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeUpdate()).thenReturn(1);
+        when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Simulate exception on connection close
+        doThrow(new SQLException("Connection close failed")).when(mockConnection).close();
+
+        // L'eccezione durante la chiusura viene propagata
+        SQLException exception = assertThrows(SQLException.class, () -> prodottoDao.doSave(prod));
+        assertEquals("Connection close failed", exception.getMessage());
+
+        verify(mockConnection).close(); // Verify close was attempted
+    }
+
+}

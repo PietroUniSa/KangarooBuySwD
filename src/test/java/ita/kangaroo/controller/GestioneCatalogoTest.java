@@ -169,10 +169,10 @@ class GestioneCatalogoTest {
             // Verifica che la SQL contenga i pezzi importanti
             verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
                     sql.contains("Prezzo >=") &&
-                    sql.contains("10") &&
-                    sql.contains("Prezzo <=") &&
-                    sql.contains("99.9") &&
-                    sql.contains("Tipo = 'ANIMALI'")
+                            sql.contains("10") &&
+                            sql.contains("Prezzo <=") &&
+                            sql.contains("99.9") &&
+                            sql.contains("Tipo = 'ANIMALI'")
             ));
         }
 
@@ -212,4 +212,151 @@ class GestioneCatalogoTest {
 
         verify(response).sendRedirect("./ErrorPage/generalError.jsp");
     }
+    @Test
+    void ajax_unknownAction_returnsJsonNull() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("boh");
+
+        StringWriter sw = wireResponseWriter(response);
+
+        try (MockedConstruction<prodottoDao> ignored = mockConstruction(prodottoDao.class)) {
+            s.doGet(request, response);
+        }
+
+        verify(response).setContentType("application/json");
+        assertEquals("null", sw.toString()); // Gson serializza null come "null"
+    }
+    @Test
+    void ajax_filter_defaultsWhenPricesMissing_andEmptyCategory() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("filter");
+
+        // prezzi mancanti -> default
+        when(request.getParameter("prezzo_da")).thenReturn(null);
+        when(request.getParameter("prezzo_a")).thenReturn("");
+        when(request.getParameter("categoria")).thenReturn(""); // vuota
+
+        ArrayList<ProdottoBean> list = new ArrayList<>();
+        list.add(new ProdottoBean());
+
+        StringWriter sw = wireResponseWriter(response);
+
+        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+                (mock, ctx) -> when(mock.doRetrieveAllByKeyword(eq(""), anyString())).thenReturn(list))) {
+
+            s.doGet(request, response);
+
+            prodottoDao daoMock = mocked.constructed().get(0);
+            verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
+                    sql.contains("Prezzo >=") &&
+                            sql.contains("0.0") &&
+                            sql.contains("Prezzo <=") &&
+                            sql.contains("5000.0") &&
+                            !sql.contains("Tipo =")
+            ));
+        }
+
+        JsonArray arr = parseJsonArray(sw.toString());
+        assertEquals(1, arr.size());
+    }
+    @Test
+    void ajax_filter_onlyPrezzoDa_set_prezzoA_default5000() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("filter");
+
+        when(request.getParameter("prezzo_da")).thenReturn("15.5");
+        when(request.getParameter("prezzo_a")).thenReturn(""); // default
+        when(request.getParameter("categoria")).thenReturn(null);
+
+        ArrayList<ProdottoBean> list = new ArrayList<>();
+        list.add(new ProdottoBean());
+
+        wireResponseWriter(response);
+
+        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+                (mock, ctx) -> when(mock.doRetrieveAllByKeyword(eq(""), anyString())).thenReturn(list))) {
+
+            s.doGet(request, response);
+
+            prodottoDao daoMock = mocked.constructed().get(0);
+            verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
+                    sql.contains("Prezzo >= 15.5") &&
+                            sql.contains("Prezzo <= 5000.0")
+            ));
+        }
+    }
+    @Test
+    void ajax_suggest_keywordNull_stillQueriesDaoAndReturnsJson() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("suggest");
+        when(request.getParameter("keyword")).thenReturn(null);
+
+        ArrayList<ProdottoBean> list = new ArrayList<>();
+        list.add(new ProdottoBean());
+
+        StringWriter sw = wireResponseWriter(response);
+
+        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+                (mock, ctx) -> when(mock.doRetrieveAllByName(isNull())).thenReturn(list))) {
+
+            s.doGet(request, response);
+        }
+
+        JsonArray arr = parseJsonArray(sw.toString());
+        assertEquals(1, arr.size());
+    }
+    @Test
+    void ajax_searchByCategory_categoryNull_queriesDao() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+        when(request.getParameter("action")).thenReturn("searchByCategory");
+        when(request.getParameter("category")).thenReturn(null);
+
+        ArrayList<ProdottoBean> list = new ArrayList<>();
+
+        wireResponseWriter(response);
+
+        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+                (mock, ctx) -> when(mock.doRetrieveAllByCategory(isNull())).thenReturn(list))) {
+
+            s.doGet(request, response);
+        }
+
+        verify(response).setContentType("application/json");
+    }
+    @Test
+    void nonAjax_actionNotNull_doesNothing() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn(null); // non ajax
+        when(request.getParameter("action")).thenReturn("anything");
+
+        s.doGet(request, response);
+
+        verify(dispatcher, never()).forward(any(), any());
+        verify(response, never()).sendRedirect(anyString());
+        verify(response, never()).setContentType(anyString());
+    }
+    @Test
+    void doPost_delegatesToDoGet_nonAjax_actionNull_forwardsCatalogo() throws Exception {
+        GestioneCatalogo s = servlet();
+
+        when(request.getHeader("X-Requested-With")).thenReturn(null);
+        when(request.getParameter("action")).thenReturn(null);
+        when(servletContext.getRequestDispatcher("/Catalogo.jsp")).thenReturn(dispatcher);
+
+        s.doPost(request, response);
+
+        verify(dispatcher).forward(request, response);
+    }
+
 }

@@ -3,24 +3,24 @@ package ita.kangaroo.dao;
 import ita.kangaroo.model.OrderProductBean;
 import ita.kangaroo.model.OrdineBean;
 import ita.kangaroo.model.utenteBean;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org. junit.jupiter.api.BeforeEach;
+import org.junit. jupiter.api.Test;
+import org. junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito. junit.jupiter.MockitoExtension;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
-import java.sql.*;
+import java. lang.reflect.Field;
+import java. sql.*;
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api. Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org. mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrdineDaoTest {
@@ -83,17 +83,48 @@ class OrdineDaoTest {
     }
 
     private void setupResultSetForOrder() throws SQLException {
-        when(mockResultSet.getInt("Id")).thenReturn(1);
+        when(mockResultSet. getInt("Id")).thenReturn(1);
         when(mockResultSet.getString("Username")).thenReturn("testuser");
         when(mockResultSet.getFloat("PrezzoTotale")).thenReturn(51.98f);
         when(mockResultSet.getString("destinatario")).thenReturn("Mario Rossi");
-        when(mockResultSet.getString("metodo_di_pagamento")).thenReturn("Carta di credito");
+        when(mockResultSet. getString("metodo_di_pagamento")).thenReturn("Carta di credito");
         when(mockResultSet.getString("circuito")).thenReturn("Visa");
         when(mockResultSet.getString("numero_carta")).thenReturn("1234567890123456");
         when(mockResultSet.getString("indirizzo_di_spedizione")).thenReturn("Via Roma 123, Milano");
         when(mockResultSet.getString("numero_di_tracking")).thenReturn("TRK123456789");
         when(mockResultSet.getDate("data")).thenReturn(Date.valueOf("2024-01-15"));
         when(mockResultSet.getString("metodo_di_spedizione")).thenReturn("Express");
+    }
+
+    /**
+     * Helper method to verify ALL fields of an OrdineBean are properly set.
+     * This is crucial for achieving high mutation coverage.
+     */
+    private void assertCompleteOrdineBean(OrdineBean bean, String expectedUsername, float expectedPrezzo,
+                                          String expectedDestinatario, String expectedMetodoPagamento,
+                                          String expectedCircuito, String expectedNumeroCarta,
+                                          String expectedIndirizzoSpedizione, String expectedNumeroTracking,
+                                          Date expectedData, String expectedMetodoSpedizione) {
+        // Verify client (addresses SURVIVED mutations on lines 136, 177, 222, 274, 324, 370)
+        assertNotNull(bean.getClient(), "Client should not be null");
+        assertEquals(expectedUsername, bean.getClient().getUsername(), "Client username mismatch");
+
+        // Verify basic fields
+        assertEquals(expectedPrezzo, bean.getPrezzo_totale(), 0.001, "Prezzo totale mismatch");
+        assertEquals(expectedDestinatario, bean.getDestinatario(), "Destinatario mismatch");
+
+        // Verify payment fields (addresses SURVIVED mutations on lines 180, 225, 277, 327, 373)
+        assertEquals(expectedMetodoPagamento, bean.getMetodo_di_pagamento(), "Metodo di pagamento mismatch");
+        assertEquals(expectedCircuito, bean.getCircuito(), "Circuito mismatch");
+        assertEquals(expectedNumeroCarta, bean.getNumero_carta(), "Numero carta mismatch");
+
+        // Verify shipping fields (addresses SURVIVED mutations on lines 183, 228, 280, 330, 376)
+        assertEquals(expectedIndirizzoSpedizione, bean.getIndirizzo_di_spedizione(), "Indirizzo spedizione mismatch");
+        assertEquals(expectedNumeroTracking, bean.getNumero_di_tracking(), "Numero tracking mismatch");
+        assertEquals(expectedMetodoSpedizione, bean.getMetodo_di_spedizione(), "Metodo spedizione mismatch");
+
+        // Verify date (addresses SURVIVED mutations on lines 185, 230, 282, 332, 378)
+        assertEquals(expectedData, bean. getData(), "Data mismatch");
     }
 
     // === TESTS FOR doSave() ===
@@ -128,8 +159,8 @@ class OrdineDaoTest {
             verify(mockPreparedStatement).executeUpdate();
 
             // Verifica che ComposizioneDao.doSave sia stato chiamato per ogni prodotto
-            assertEquals(1, mockedComposizione.constructed().size());
-            verify(mockedComposizione.constructed().get(0), times(1)).doSave(any(OrderProductBean.class));
+            assertEquals(1, mockedComposizione. constructed().size());
+            verify(mockedComposizione.constructed().get(0), times(1)).doSave(any(OrderProductBean. class));
         }
     }
 
@@ -146,7 +177,7 @@ class OrdineDaoTest {
         try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class)) {
 
             // Act
-            assertDoesNotThrow(() -> ordineDao.doSave(order));
+            assertDoesNotThrow(() -> ordineDao. doSave(order));
 
             // Assert
             verify(mockPreparedStatement).executeUpdate();
@@ -174,7 +205,7 @@ class OrdineDaoTest {
             // Assert
             verify(mockPreparedStatement).executeUpdate();
             assertEquals(1, mockedComposizione.constructed().size());
-            verify(mockedComposizione.constructed().get(0), never()).doSave(any(OrderProductBean.class));
+            verify(mockedComposizione. constructed().get(0), never()).doSave(any(OrderProductBean.class));
         }
     }
 
@@ -228,10 +259,10 @@ class OrdineDaoTest {
 
         when(mockDataSource.getConnection()).thenThrow(expectedException);
 
-        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class)) {
+        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao. class)) {
             // Act & Assert
             SQLException exception = assertThrows(SQLException.class, () -> ordineDao.doSave(order));
-            assertEquals("Connection failed", exception.getMessage());
+            assertEquals("Connection failed", exception. getMessage());
         }
     }
 
@@ -273,26 +304,23 @@ class OrdineDaoTest {
         when(mockResultSet.next()).thenReturn(true, false);
         setupResultSetForOrder();
 
-        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class,
-                (mock, context) -> when(mock.doRetrieveByKey(anyInt())).thenReturn(mockProducts));
+        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao. class,
+                (mock, context) -> when(mock. doRetrieveByKey(anyInt())).thenReturn(mockProducts));
              MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class,
-                     (mock, context) -> when(mock.doRetrieveByKey(anyString())).thenReturn(mockUser))) {
+                     (mock, context) -> when(mock. doRetrieveByKey(anyString())).thenReturn(mockUser))) {
 
             // Act
-            OrdineBean result = ordineDao.doRetrieveByKey(id);
+            OrdineBean result = ordineDao. doRetrieveByKey(id);
 
-            // Assert
+            // Assert - Complete verification to kill all SURVIVED mutations
             assertNotNull(result);
             assertEquals(1, result.getId());
-            assertEquals(51.98f, result.getPrezzo_totale(), 0.001);
-            assertEquals("Mario Rossi", result.getDestinatario());
-            assertEquals("Carta di credito", result.getMetodo_di_pagamento());
-            assertEquals("Visa", result.getCircuito());
-            assertEquals("1234567890123456", result.getNumero_carta());
-            assertEquals("Via Roma 123, Milano", result.getIndirizzo_di_spedizione());
-            assertEquals("TRK123456789", result.getNumero_di_tracking());
-            assertEquals(Date.valueOf("2024-01-15"), result.getData());
-            assertEquals("Express", result.getMetodo_di_spedizione());
+
+            // Critical:  Verify ALL fields to kill SURVIVED mutations (lines 136, 137-145)
+            assertCompleteOrdineBean(result, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date.valueOf("2024-01-15"), "Express");
 
             verify(mockPreparedStatement).setInt(1, id);
         }
@@ -303,13 +331,13 @@ class OrdineDaoTest {
         // Arrange
         int id = 999;
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
-        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class,
-                (mock, context) -> when(mock.doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()));
+        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao. class,
+                (mock, context) -> when(mock. doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()));
              MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
 
             // Act
@@ -326,14 +354,14 @@ class OrdineDaoTest {
         // Arrange
         setStaticDataSource(null);
 
-        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class,
+        try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao. class,
                 (mock, context) -> when(mock.doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()));
              MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
 
             // Act & Assert
             IllegalStateException exception = assertThrows(IllegalStateException.class,
-                    () -> ordineDao.doRetrieveByKey(1));
-            assertEquals("DataSource not configured", exception.getMessage());
+                    () -> ordineDao. doRetrieveByKey(1));
+            assertEquals("DataSource not configured", exception. getMessage());
         }
     }
 
@@ -341,7 +369,7 @@ class OrdineDaoTest {
     void testDoRetrieveByKey_SQLException_Propagated() throws SQLException {
         // Arrange
         SQLException expectedException = new SQLException("Query failed");
-        when(mockDataSource.getConnection()).thenThrow(expectedException);
+        when(mockDataSource. getConnection()).thenThrow(expectedException);
 
         try (MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class,
                 (mock, context) -> when(mock.doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()));
@@ -349,7 +377,7 @@ class OrdineDaoTest {
 
             // Act & Assert
             SQLException exception = assertThrows(SQLException.class, () -> ordineDao.doRetrieveByKey(1));
-            assertEquals("Query failed", exception.getMessage());
+            assertEquals("Query failed", exception. getMessage());
         }
     }
 
@@ -368,16 +396,17 @@ class OrdineDaoTest {
         setupResultSetForOrder();
 
         try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class,
-                (mock, context) -> when(mock.doRetrieveByKey(anyString())).thenReturn(mockUser))) {
+                (mock, context) -> when(mock. doRetrieveByKey(anyString())).thenReturn(mockUser))) {
 
             // Act
-            OrdineBean result = ordineDao.lastOrder();
+            OrdineBean result = ordineDao. lastOrder();
 
-            // Assert
+            // Assert - Complete verification to kill ALL SURVIVED mutations (lines 177-186)
             assertNotNull(result);
-            assertEquals(1, result.getId());
-            assertEquals(51.98f, result.getPrezzo_totale(), 0.001);
-            assertEquals("Mario Rossi", result.getDestinatario());
+            assertCompleteOrdineBean(result, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date. valueOf("2024-01-15"), "Express");
         }
     }
 
@@ -396,7 +425,7 @@ class OrdineDaoTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals(0, result.getId());
+            assertEquals(0, result. getId());
         }
     }
 
@@ -418,7 +447,7 @@ class OrdineDaoTest {
     void testLastOrder_SQLException_Propagated() throws SQLException {
         // Arrange
         SQLException expectedException = new SQLException("Query failed");
-        when(mockDataSource.getConnection()).thenThrow(expectedException);
+        when(mockDataSource. getConnection()).thenThrow(expectedException);
 
         try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
 
@@ -437,21 +466,21 @@ class OrdineDaoTest {
         utenteBean mockUser = new utenteBean();
         mockUser.setUsername(username);
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, true, false);
 
-        // Due ordini
-        when(mockResultSet.getInt("Id")).thenReturn(1, 2);
+        // Due ordini - Setup completo per uccidere i SURVIVED mutations (lines 222-231)
+        when(mockResultSet. getInt("Id")).thenReturn(1, 2);
         when(mockResultSet.getString("Username")).thenReturn(username, username);
         when(mockResultSet.getFloat("PrezzoTotale")).thenReturn(51.98f, 100.00f);
         when(mockResultSet.getString("destinatario")).thenReturn("Mario Rossi", "Luigi Verdi");
-        when(mockResultSet.getString("metodo_di_pagamento")).thenReturn("Carta di credito", "PayPal");
+        when(mockResultSet. getString("metodo_di_pagamento")).thenReturn("Carta di credito", "PayPal");
         when(mockResultSet.getString("circuito")).thenReturn("Visa", "MasterCard");
         when(mockResultSet.getString("numero_carta")).thenReturn("1234567890123456", "9876543210987654");
-        when(mockResultSet.getString("indirizzo_di_spedizione")).thenReturn("Via Roma 123", "Via Milano 456");
-        when(mockResultSet.getString("numero_di_tracking")).thenReturn("TRK123", "TRK456");
+        when(mockResultSet. getString("indirizzo_di_spedizione")).thenReturn("Via Roma 123, Milano", "Via Milano 456, Roma");
+        when(mockResultSet. getString("numero_di_tracking")).thenReturn("TRK123456789", "TRK987654321");
         when(mockResultSet.getDate("data")).thenReturn(Date.valueOf("2024-01-15"), Date.valueOf("2024-02-20"));
         when(mockResultSet.getString("metodo_di_spedizione")).thenReturn("Express", "Standard");
 
@@ -459,17 +488,25 @@ class OrdineDaoTest {
                 (mock, context) -> when(mock.doRetrieveByKey(anyString())).thenReturn(mockUser))) {
 
             // Act
-            ArrayList<OrdineBean> result = ordineDao.doRetrieveByClient(username);
+            ArrayList<OrdineBean> result = ordineDao. doRetrieveByClient(username);
 
-            // Assert
+            // Assert - Complete verification for ALL orders to kill SURVIVED mutations
             assertNotNull(result);
-            assertEquals(2, result.size());
+            assertEquals(2, result. size());
 
-            assertEquals(1, result.get(0).getId());
-            assertEquals("Mario Rossi", result.get(0).getDestinatario());
+            // Verify first order completely (kills SURVIVED mutations lines 222-231)
+            OrdineBean firstOrder = result.get(0);
+            assertCompleteOrdineBean(firstOrder, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date.valueOf("2024-01-15"), "Express");
 
-            assertEquals(2, result.get(1).getId());
-            assertEquals("Luigi Verdi", result.get(1).getDestinatario());
+            // Verify second order completely
+            OrdineBean secondOrder = result. get(1);
+            assertCompleteOrdineBean(secondOrder, "testuser", 100.00f, "Luigi Verdi",
+                    "PayPal", "MasterCard", "9876543210987654",
+                    "Via Milano 456, Roma", "TRK987654321",
+                    Date. valueOf("2024-02-20"), "Standard");
 
             verify(mockPreparedStatement).setString(1, username);
         }
@@ -488,7 +525,7 @@ class OrdineDaoTest {
         try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
 
             // Act
-            ArrayList<OrdineBean> result = ordineDao.doRetrieveByClient(username);
+            ArrayList<OrdineBean> result = ordineDao. doRetrieveByClient(username);
 
             // Assert
             assertNotNull(result);
@@ -505,7 +542,7 @@ class OrdineDaoTest {
 
             // Act & Assert
             IllegalStateException exception = assertThrows(IllegalStateException.class,
-                    () -> ordineDao.doRetrieveByClient("testuser"));
+                    () -> ordineDao. doRetrieveByClient("testuser"));
             assertEquals("DataSource not configured", exception.getMessage());
         }
     }
@@ -520,7 +557,7 @@ class OrdineDaoTest {
 
             // Act & Assert
             SQLException exception = assertThrows(SQLException.class,
-                    () -> ordineDao.doRetrieveByClient("testuser"));
+                    () -> ordineDao. doRetrieveByClient("testuser"));
             assertEquals("Query failed", exception.getMessage());
         }
     }
@@ -536,9 +573,9 @@ class OrdineDaoTest {
         utenteBean mockUser = new utenteBean();
         mockUser.setUsername(username);
 
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
         setupResultSetForOrder();
 
@@ -548,10 +585,15 @@ class OrdineDaoTest {
             // Act
             ArrayList<OrdineBean> result = ordineDao.ClientDateOrders(username, dataFrom, dataTo);
 
-            // Assert
+            // Assert - Complete verification to kill SURVIVED mutations (lines 274-283)
             assertNotNull(result);
             assertEquals(1, result.size());
-            assertEquals(1, result.get(0).getId());
+
+            OrdineBean order = result.get(0);
+            assertCompleteOrdineBean(order, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date.valueOf("2024-01-15"), "Express");
 
             verify(mockPreparedStatement).setString(1, username);
             verify(mockPreparedStatement).setString(2, dataFrom);
@@ -578,7 +620,7 @@ class OrdineDaoTest {
 
             // Assert
             assertNotNull(result);
-            assertTrue(result.isEmpty());
+            assertTrue(result. isEmpty());
         }
     }
 
@@ -607,7 +649,7 @@ class OrdineDaoTest {
             // Act & Assert
             SQLException exception = assertThrows(SQLException.class,
                     () -> ordineDao.ClientDateOrders("testuser", "2024-01-01", "2024-12-31"));
-            assertEquals("Query failed", exception.getMessage());
+            assertEquals("Query failed", exception. getMessage());
         }
     }
 
@@ -622,7 +664,7 @@ class OrdineDaoTest {
         mockUser.setUsername("testuser");
 
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection. prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, false);
         setupResultSetForOrder();
@@ -633,10 +675,15 @@ class OrdineDaoTest {
             // Act
             ArrayList<OrdineBean> result = ordineDao.DateOrders(dataFrom, dataTo);
 
-            // Assert
+            // Assert - Complete verification to kill SURVIVED mutations (lines 324-333)
             assertNotNull(result);
             assertEquals(1, result.size());
-            assertEquals(1, result.get(0).getId());
+
+            OrdineBean order = result.get(0);
+            assertCompleteOrdineBean(order, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date.valueOf("2024-01-15"), "Express");
 
             verify(mockPreparedStatement).setString(1, dataFrom);
             verify(mockPreparedStatement).setString(2, dataTo);
@@ -675,7 +722,7 @@ class OrdineDaoTest {
             // Act & Assert
             IllegalStateException exception = assertThrows(IllegalStateException.class,
                     () -> ordineDao.DateOrders("2024-01-01", "2024-12-31"));
-            assertEquals("DataSource not configured", exception.getMessage());
+            assertEquals("DataSource not configured", exception. getMessage());
         }
     }
 
@@ -690,7 +737,7 @@ class OrdineDaoTest {
             // Act & Assert
             SQLException exception = assertThrows(SQLException.class,
                     () -> ordineDao.DateOrders("2024-01-01", "2024-12-31"));
-            assertEquals("Query failed", exception.getMessage());
+            assertEquals("Query failed", exception. getMessage());
         }
     }
 
@@ -707,41 +754,54 @@ class OrdineDaoTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(true, true, false);
 
+        // Setup per due ordini completi - per uccidere SURVIVED mutations (lines 370-379)
         when(mockResultSet.getInt("Id")).thenReturn(1, 2);
         when(mockResultSet.getString("Username")).thenReturn("testuser", "testuser2");
         when(mockResultSet.getFloat("PrezzoTotale")).thenReturn(51.98f, 100.00f);
         when(mockResultSet.getString("destinatario")).thenReturn("Mario Rossi", "Luigi Verdi");
         when(mockResultSet.getString("metodo_di_pagamento")).thenReturn("Carta di credito", "PayPal");
         when(mockResultSet.getString("circuito")).thenReturn("Visa", "MasterCard");
-        when(mockResultSet.getString("numero_carta")).thenReturn("1234567890123456", "9876543210987654");
-        when(mockResultSet.getString("indirizzo_di_spedizione")).thenReturn("Via Roma 123", "Via Milano 456");
-        when(mockResultSet.getString("numero_di_tracking")).thenReturn("TRK123", "TRK456");
-        when(mockResultSet.getDate("data")).thenReturn(Date.valueOf("2024-01-15"), Date.valueOf("2024-02-20"));
+        when(mockResultSet. getString("numero_carta")).thenReturn("1234567890123456", "9876543210987654");
+        when(mockResultSet.getString("indirizzo_di_spedizione")).thenReturn("Via Roma 123, Milano", "Via Milano 456, Roma");
+        when(mockResultSet.getString("numero_di_tracking")).thenReturn("TRK123456789", "TRK987654321");
+        when(mockResultSet. getDate("data")).thenReturn(Date.valueOf("2024-01-15"), Date.valueOf("2024-02-20"));
         when(mockResultSet.getString("metodo_di_spedizione")).thenReturn("Express", "Standard");
 
-        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class,
+        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao. class,
                 (mock, context) -> when(mock.doRetrieveByKey(anyString())).thenReturn(mockUser))) {
 
             // Act
             ArrayList<OrdineBean> result = ordineDao.doRetrieveAll();
 
-            // Assert
+            // Assert - Complete verification for ALL orders to kill SURVIVED mutations
             assertNotNull(result);
-            assertEquals(2, result.size());
-            assertEquals(1, result.get(0).getId());
-            assertEquals(2, result.get(1).getId());
+            assertEquals(2, result. size());
+
+            // Verify first order completely (kills SURVIVED mutations lines 370-379)
+            OrdineBean firstOrder = result.get(0);
+            assertCompleteOrdineBean(firstOrder, "testuser", 51.98f, "Mario Rossi",
+                    "Carta di credito", "Visa", "1234567890123456",
+                    "Via Roma 123, Milano", "TRK123456789",
+                    Date.valueOf("2024-01-15"), "Express");
+
+            // Verify second order completely
+            OrdineBean secondOrder = result. get(1);
+            assertCompleteOrdineBean(secondOrder, "testuser", 100.00f, "Luigi Verdi",
+                    "PayPal", "MasterCard", "9876543210987654",
+                    "Via Milano 456, Roma", "TRK987654321",
+                    Date.valueOf("2024-02-20"), "Standard");
         }
     }
 
     @Test
     void testDoRetrieveAll_NoOrders_ReturnsEmptyList() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
-        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
+        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao. class)) {
 
             // Act
             ArrayList<OrdineBean> result = ordineDao.doRetrieveAll();
@@ -760,7 +820,7 @@ class OrdineDaoTest {
         try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
 
             // Act & Assert
-            IllegalStateException exception = assertThrows(IllegalStateException.class,
+            IllegalStateException exception = assertThrows(IllegalStateException. class,
                     () -> ordineDao.doRetrieveAll());
             assertEquals("DataSource not configured", exception.getMessage());
         }
@@ -785,12 +845,12 @@ class OrdineDaoTest {
     @Test
     void testResourceManagement_AllResourcesClosed() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
-        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class)) {
+        try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao. class)) {
 
             // Act
             ordineDao.doRetrieveAll();
@@ -805,19 +865,19 @@ class OrdineDaoTest {
     @Test
     void testSynchronizedBehavior_MultipleCalls_WorkCorrectly() throws SQLException {
         // Arrange
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockDataSource. getConnection()).thenReturn(mockConnection);
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement. executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
         try (MockedConstruction<utenteDao> mockedUtente = mockConstruction(utenteDao.class);
              MockedConstruction<ComposizioneDao> mockedComposizione = mockConstruction(ComposizioneDao.class,
-                     (mock, context) -> when(mock.doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()))) {
+                     (mock, context) -> when(mock. doRetrieveByKey(anyInt())).thenReturn(new ArrayList<>()))) {
 
             // Act
             ArrayList<OrdineBean> result1 = ordineDao.doRetrieveAll();
             OrdineBean result2 = ordineDao.lastOrder();
-            OrdineBean result3 = ordineDao.doRetrieveByKey(1);
+            OrdineBean result3 = ordineDao. doRetrieveByKey(1);
 
             // Assert
             assertNotNull(result1);
@@ -841,6 +901,4 @@ class OrdineDaoTest {
             }
         }
     }
-
 }
-
