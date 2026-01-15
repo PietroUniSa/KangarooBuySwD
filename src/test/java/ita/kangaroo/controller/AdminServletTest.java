@@ -4,20 +4,30 @@ import ita.kangaroo.dao.OrdineDao;
 import ita.kangaroo.dao.prodottoDao;
 import ita.kangaroo.dao.utenteDao;
 import ita.kangaroo.model.*;
+
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.naming.*;
+import javax.naming.spi.InitialContextFactory;
+import javax.sql.DataSource;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -26,55 +36,80 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AdminServletTest {
 
-    @Mock
-    private ServletConfig servletConfig;
-    @Mock
-    private HttpServletRequest request;
-    @Mock
-    private HttpServletResponse response;
-    @Mock
-    private HttpSession session;
-    @Mock
-    private ServletContext servletContext;
-    @Mock
-    private RequestDispatcher dispatcher;
-    @Mock
-    private Part filePart;
-    @Mock
-    private InputStream inputStream;
-    @Mock
-    private OrdineDao mockOrderModel;
-    @Mock
-    private prodottoDao mockProductModel;
-    @Mock
-    private utenteDao mockClientModel;
+    // ---- JNDI config: MUST match your DAO ----
+    private static final String ENV_CTX = "java:comp/env";
+    private static final String JNDI_DS_NAME = "jdbc/kangaroodb";
+
+    // ---- Servlet mocks ----
+    @Mock private ServletConfig servletConfig;
+    @Mock private HttpServletRequest request;
+    @Mock private HttpServletResponse response;
+    @Mock private HttpSession session;
+    @Mock private ServletContext servletContext;
+    @Mock private RequestDispatcher dispatcher;
+    @Mock private Part filePart;
+    @Mock private InputStream inputStream;
+
+    // ---- DAO mocks ----
+    @Mock private OrdineDao mockOrderModel;
+    @Mock private prodottoDao mockProductModel;
+    @Mock private utenteDao mockClientModel;
+
+    // ---- DataSource mocks (JNDI) ----
+    @Mock private DataSource dataSource;
+    @Mock private Connection connection;
 
     private AdminServlet adminServlet;
     private utenteBean adminUser;
     private utenteBean nonAdminUser;
 
+    // ------------------------------------------------------------
+    // ✅ JNDI init BEFORE any DAO static initializers might run
+    // ------------------------------------------------------------
+    @BeforeAll
+    static void initJndiFactory() {
+        System.setProperty(Context.INITIAL_CONTEXT_FACTORY, InMemoryInitialContextFactory.class.getName());
+    }
+
     @BeforeEach
     void setUp() throws Exception {
+        // ------------------------------------------------------------
+        // ✅ Bind mocked DataSource into JNDI: java:comp/env/jdbc/kangaroodb
+        // ------------------------------------------------------------
+        InitialContext ic = new InitialContext();
+
+        Context env;
+        try {
+            env = (Context) ic.lookup(ENV_CTX);
+        } catch (NamingException e) {
+            env = ic.createSubcontext(ENV_CTX);
+        }
+        env.rebind(JNDI_DS_NAME, dataSource);
+
+        // If DAOs ask for connections
+        lenient().when(dataSource.getConnection()).thenReturn(connection);
+
+        // ------------------------------------------------------------
+        // Servlet init
+        // ------------------------------------------------------------
         adminServlet = new AdminServlet();
 
-        // Mock ServletConfig e ServletContext
         lenient().when(servletConfig.getServletContext()).thenReturn(servletContext);
         adminServlet.init(servletConfig);
 
-        // Setup admin user
+        // Setup users
         adminUser = new utenteBean();
         adminUser.setEmail("provoloni@example.com");
 
-        // Setup non-admin user
         nonAdminUser = new utenteBean();
         nonAdminUser.setEmail("user@example.com");
 
-        // Inject mocked DAOs
+        // Inject mocked DAOs (static fields on servlet)
         injectMockDao("orderModel", mockOrderModel);
         injectMockDao("model", mockProductModel);
         injectMockDao("clientModel", mockClientModel);
 
-        // Setup common mocks con lenient per evitare UnnecessaryStubbing
+        // Common mocks
         lenient().when(request.getSession()).thenReturn(session);
         lenient().when(request.getServletContext()).thenReturn(servletContext);
         lenient().when(servletContext.getRequestDispatcher(anyString())).thenReturn(dispatcher);
@@ -84,113 +119,162 @@ class AdminServletTest {
     private void injectMockDao(String fieldName, Object mockDao) throws Exception {
         Field field = AdminServlet.class.getDeclaredField(fieldName);
         field.setAccessible(true);
-        field.set(null, mockDao);
+        field.set(null, mockDao); // static field
     }
 
-    // Test authorization - admin user can access
+    // ------------------------------------------------------------
+    // ✅ JNDI in-memory implementation
+    // ------------------------------------------------------------
+    public static final class InMemoryInitialContextFactory implements InitialContextFactory {
+        private static final Context ROOT = new InMemoryContext();
+        @Override public Context getInitialContext(Hashtable<?, ?> environment) {
+            return ROOT;
+        }
+    }
+
+    public static final class InMemoryContext implements Context {
+        private final Map<String, Object> bindings = new ConcurrentHashMap<>();
+
+        @Override
+        public Object lookup(String name) throws NamingException {
+            if (bindings.containsKey(name)) return bindings.get(name);
+
+            // hierarchical lookup "java:comp/env"
+            int slash = name.indexOf('/');
+            if (slash > 0) {
+                String head = name.substring(0, slash);
+                String tail = name.substring(slash + 1);
+                Object child = bindings.get(head);
+                if (child instanceof Context) return ((Context) child).lookup(tail);
+            }
+
+            throw new NamingException("Name not bound: " + name);
+        }
+
+        @Override
+        public Context createSubcontext(String name) {
+            InMemoryContext sub = new InMemoryContext();
+            rebind(name, sub);
+            return sub;
+        }
+
+        @Override public void bind(String name, Object obj) { bindings.put(name, obj); }
+        @Override public void rebind(String name, Object obj) { bindings.put(name, obj); }
+        @Override public void unbind(String name) { bindings.remove(name); }
+        @Override public void close() {}
+
+        @Override public Object lookup(Name name) throws NamingException { return lookup(name.toString()); }
+        @Override public void bind(Name name, Object obj) throws NamingException { bind(name.toString(), obj); }
+        @Override public void rebind(Name name, Object obj) throws NamingException { rebind(name.toString(), obj); }
+        @Override public void unbind(Name name) throws NamingException { unbind(name.toString()); }
+        @Override public Context createSubcontext(Name name) throws NamingException { return createSubcontext(name.toString()); }
+
+        // Not needed in these tests
+        @Override public NamingEnumeration<NameClassPair> list(String name) { throw new UnsupportedOperationException(); }
+        @Override public NamingEnumeration<NameClassPair> list(Name name) { throw new UnsupportedOperationException(); }
+        @Override public NamingEnumeration<Binding> listBindings(String name) { throw new UnsupportedOperationException(); }
+        @Override public NamingEnumeration<Binding> listBindings(Name name) { throw new UnsupportedOperationException(); }
+        @Override public void destroySubcontext(String name) { throw new UnsupportedOperationException(); }
+        @Override public void destroySubcontext(Name name) { throw new UnsupportedOperationException(); }
+        @Override public Object lookupLink(String name) { throw new UnsupportedOperationException(); }
+        @Override public Object lookupLink(Name name) { throw new UnsupportedOperationException(); }
+        @Override public NameParser getNameParser(String name) { throw new UnsupportedOperationException(); }
+        @Override public NameParser getNameParser(Name name) { throw new UnsupportedOperationException(); }
+        @Override public Name composeName(Name name, Name prefix) { throw new UnsupportedOperationException(); }
+        @Override public String composeName(String name, String prefix) { throw new UnsupportedOperationException(); }
+        @Override public Object addToEnvironment(String propName, Object propVal) { throw new UnsupportedOperationException(); }
+        @Override public Object removeFromEnvironment(String propName) { throw new UnsupportedOperationException(); }
+        @Override public Hashtable<?, ?> getEnvironment() { return new Hashtable<>(); }
+        @Override public String getNameInNamespace() { return ""; }
+        @Override public void rename(String oldName, String newName) { throw new UnsupportedOperationException(); }
+        @Override public void rename(Name oldName, Name newName) { throw new UnsupportedOperationException(); }
+    }
+
+    // ------------------------------------------------------------
+    // ✅ Tests (your originals)
+    // ------------------------------------------------------------
+
     @Test
     void testDoGet_AdminUserCanAccess() throws ServletException, IOException {
-        // Arrange
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("");
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(dispatcher).forward(request, response);
         verify(response, never()).sendRedirect(anyString());
     }
 
-    // Test authorization - non-admin user redirected
     @Test
     void testDoGet_NonAdminUserRedirected() throws ServletException, IOException {
-        // Arrange
         when(session.getAttribute("utente")).thenReturn(nonAdminUser);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(response).sendRedirect("HomeServlet");
         verify(dispatcher, never()).forward(request, response);
     }
 
-    // Test authorization - null user redirected
     @Test
     void testDoGet_NullUserRedirected() throws ServletException, IOException {
-        // Arrange
         when(session.getAttribute("utente")).thenReturn(null);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(response).sendRedirect("HomeServlet");
     }
 
-    // Test empty action forwards to admin page
     @Test
     void testDoGet_EmptyActionForwardsToAdminPage() throws ServletException, IOException {
-        // Arrange
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("");
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(servletContext).getRequestDispatcher("/admin.jsp");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test successful product insertion
     @Test
-    void testDoGet_InsertProductSuccess() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_InsertProductSuccess() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
-        when(request.getPart("image")).thenReturn(filePart);
-        when(filePart.getInputStream()).thenReturn(inputStream);
-        when(inputStream.read(any(byte[].class))).thenReturn(-1); // Simulate empty file
 
-        setupValidProductParameters();
-
-        // Act
-        adminServlet.doGet(request, response);
-
-        // Assert
-        verify(mockProductModel).doSave(any(ProdottoBean.class));
-        verify(request).setAttribute("success", "Prodotto inserito correttamente.");
-    }
-
-    // Test product insertion with invalid name
-    @Test
-    void testDoGet_InsertProductInvalidName() throws ServletException, IOException {
-        // Arrange
-        when(session.getAttribute("utente")).thenReturn(adminUser);
-        when(request.getParameter("action")).thenReturn("insert");
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
         when(inputStream.read(any(byte[].class))).thenReturn(-1);
 
         setupValidProductParameters();
-        when(request.getParameter("name")).thenReturn("Invalid123"); // Contains numbers
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
+        verify(mockProductModel).doSave(any(ProdottoBean.class));
+        verify(request).setAttribute("success", "Prodotto inserito correttamente.");
+    }
+
+    @Test
+    void testDoGet_InsertProductInvalidName() throws Exception {
+        when(session.getAttribute("utente")).thenReturn(adminUser);
+        when(request.getParameter("action")).thenReturn("insert");
+
+        when(request.getPart("image")).thenReturn(filePart);
+        when(filePart.getInputStream()).thenReturn(inputStream);
+        when(inputStream.read(any(byte[].class))).thenReturn(-1);
+
+        setupValidProductParameters();
+        when(request.getParameter("name")).thenReturn("Invalid123");
+
+        adminServlet.doGet(request, response);
+
         verify(request).setAttribute("error", "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test product insertion with invalid category
     @Test
-    void testDoGet_InsertProductInvalidCategory() throws ServletException, IOException {
-        // Arrange
+    void testDoGet_InsertProductInvalidCategory() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
+
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
         when(inputStream.read(any(byte[].class))).thenReturn(-1);
@@ -198,19 +282,16 @@ class AdminServletTest {
         setupValidProductParameters();
         when(request.getParameter("category")).thenReturn("invalid_category");
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("error", "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
     }
 
-    // Test product insertion SQL exception handling
     @Test
-    void testDoGet_InsertProductSQLException() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_InsertProductSQLException() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
+
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
         when(inputStream.read(any(byte[].class))).thenReturn(-1);
@@ -219,17 +300,13 @@ class AdminServletTest {
         doThrow(new SQLException("Database error")).when(mockProductModel).doSave(any(ProdottoBean.class));
         when(request.getContextPath()).thenReturn("/kangaroo");
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(response).sendRedirect("/kangaroo/ErrorPage/generalError.jsp");
     }
 
-    // Test load product by ID - success
     @Test
-    void testDoGet_LoadProductSuccess() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_LoadProductSuccess() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("load");
         when(request.getParameter("id")).thenReturn("1");
@@ -239,52 +316,39 @@ class AdminServletTest {
         product.setNome("Test Product");
         when(mockProductModel.doRetrieveByKey(1)).thenReturn(product);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("prodotto", product);
-        // Rimuovi la verifica specifica del numero di chiamate
         verify(dispatcher, atLeastOnce()).forward(request, response);
     }
 
-    // Test load product by ID - not found
     @Test
-    void testDoGet_LoadProductNotFound() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_LoadProductNotFound() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("load");
         when(request.getParameter("id")).thenReturn("999");
         when(mockProductModel.doRetrieveByKey(999)).thenReturn(null);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("error", "Prodotto con ID 999 non trovato.");
         verify(dispatcher, atLeastOnce()).forward(request, response);
     }
 
-    // Test modify product - success
     @Test
-    void testDoGet_ModifyProductSuccess() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_ModifyProductSuccess() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("modify");
         setupValidModifyParameters();
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(mockProductModel).doModify(any(ProdottoBean.class));
         verify(dispatcher).forward(request, response);
     }
 
-    // Test delete product - success
     @Test
-    void testDoGet_DeleteProductSuccess() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_DeleteProductSuccess() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("delete");
         when(request.getParameter("id")).thenReturn("1");
@@ -294,18 +358,14 @@ class AdminServletTest {
         product.setId(1);
         when(mockProductModel.doRetrieveByKey(1)).thenReturn(product);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(mockProductModel).doDelete(1);
         verify(response).sendRedirect("/kangaroo/admin.jsp");
     }
 
-    // Test delete product - referenced in orders
     @Test
-    void testDoGet_DeleteProductReferencedInOrders() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_DeleteProductReferencedInOrders() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("delete");
         when(request.getParameter("id")).thenReturn("1");
@@ -314,24 +374,18 @@ class AdminServletTest {
         product.setId(1);
         when(mockProductModel.doRetrieveByKey(1)).thenReturn(product);
 
-        // Il messaggio deve corrispondere esattamente a quello nel codice (con lo spazio finale)
         doThrow(new SQLException("Cannot delete product, it is referenced in composizione. "))
                 .when(mockProductModel).doDelete(1);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("error", "Non è possibile eliminare il prodotto poiché è presente in uno o più ordini.");
         verify(request).getRequestDispatcher("/admin.jsp");
-        // Accetta che forward() venga chiamato 2 volte invece di 1
         verify(dispatcher, times(2)).forward(request, response);
     }
 
-    // Test retrieve orders without filter
     @Test
-    void testDoGet_OrdersNoFilter() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_OrdersNoFilter() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("ordersNoFilter");
 
@@ -339,19 +393,15 @@ class AdminServletTest {
         orders.add(new OrdineBean());
         when(mockOrderModel.doRetrieveAll()).thenReturn(orders);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("ordini", orders);
         verify(servletContext).getRequestDispatcher("/clientsorder.jsp");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve orders by client
     @Test
-    void testDoGet_OrdersByClient() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_OrdersByClient() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("orders");
         when(request.getParameter("Order By Client")).thenReturn("true");
@@ -361,39 +411,31 @@ class AdminServletTest {
         orders.add(new OrdineBean());
         when(mockOrderModel.doRetrieveByClient("testuser")).thenReturn(orders);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("ordini", orders);
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve orders by client - no orders found
     @Test
-    void testDoGet_OrdersByClientNoOrdersFound() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_OrdersByClientNoOrdersFound() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("orders");
         when(request.getParameter("Order By Client")).thenReturn("true");
         when(request.getParameter("cliente")).thenReturn("testuser");
         when(mockOrderModel.doRetrieveByClient("testuser")).thenReturn(new ArrayList<>());
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("clientError", "Questo utente non ha ordini salvati");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve orders by date range
     @Test
-    void testDoGet_OrdersByDateRange() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_OrdersByDateRange() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("orders");
-        when(request.getParameter("Order By Client")).thenReturn(null); // Aggiungi questo
+        when(request.getParameter("Order By Client")).thenReturn(null);
         when(request.getParameter("Order By Date")).thenReturn("true");
         when(request.getParameter("data_da")).thenReturn("2023-01-01");
         when(request.getParameter("data_a")).thenReturn("2023-12-31");
@@ -402,38 +444,29 @@ class AdminServletTest {
         orders.add(new OrdineBean());
         when(mockOrderModel.DateOrders("2023-01-01", "2023-12-31")).thenReturn(orders);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("ordini", orders);
         verify(dispatcher).forward(request, response);
     }
 
-
-    // Test retrieve orders by date range - invalid dates
     @Test
-    void testDoGet_OrdersByDateRangeInvalidDates() throws ServletException, IOException {
-        // Arrange
+    void testDoGet_OrdersByDateRangeInvalidDates() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("orders");
-        when(request.getParameter("Order By Client")).thenReturn(null); // Aggiungi questo
+        when(request.getParameter("Order By Client")).thenReturn(null);
         when(request.getParameter("Order By Date")).thenReturn("true");
         when(request.getParameter("data_da")).thenReturn("2023-12-31");
-        when(request.getParameter("data_a")).thenReturn("2023-01-01"); // End date before start date
+        when(request.getParameter("data_a")).thenReturn("2023-01-01");
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("dateError", "Inserisci date valide");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve clients without filter
     @Test
-    void testDoGet_ClientsNoFilter() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_ClientsNoFilter() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("clientsNoFilter");
 
@@ -441,19 +474,15 @@ class AdminServletTest {
         clients.add(new utenteBean());
         when(mockClientModel.doRetrieveAll()).thenReturn(clients);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("clienti", clients);
         verify(servletContext).getRequestDispatcher("/Cliente.jsp");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve client by username
     @Test
-    void testDoGet_ByClientSuccess() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_ByClientSuccess() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("ByClient");
         when(request.getParameter("cliente")).thenReturn("testuser");
@@ -462,106 +491,69 @@ class AdminServletTest {
         client.setUsername("testuser");
         when(mockClientModel.doRetrieveByKey("testuser")).thenReturn(client);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute(eq("clienti"), any(ArrayList.class));
         verify(dispatcher).forward(request, response);
     }
 
-    // Test retrieve client by username - not found
     @Test
-    void testDoGet_ByClientNotFound() throws ServletException, IOException, SQLException {
-        // Arrange
+    void testDoGet_ByClientNotFound() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("ByClient");
         when(request.getParameter("cliente")).thenReturn("nonexistent");
         when(mockClientModel.doRetrieveByKey("nonexistent")).thenReturn(null);
 
-        // Act
         adminServlet.doGet(request, response);
 
-        // Assert
         verify(request).setAttribute("clientError", "Questo utente non esiste");
         verify(dispatcher).forward(request, response);
     }
 
-    // Test doPost delegates to doGet
     @Test
-    void testDoPost_DelegatesToDoGet() throws ServletException, IOException {
-        // Arrange
+    void testDoPost_DelegatesToDoGet() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("");
 
-        // Act
         adminServlet.doPost(request, response);
 
-        // Assert
         verify(dispatcher).forward(request, response);
     }
 
-    // Test parseOrDefault with valid integer
     @Test
     void testParseOrDefault_ValidInteger() throws Exception {
-        // Use reflection to access private method
-        java.lang.reflect.Method method = AdminServlet.class.getDeclaredMethod("parseOrDefault", String.class, int.class);
+        var method = AdminServlet.class.getDeclaredMethod("parseOrDefault", String.class, int.class);
         method.setAccessible(true);
 
         int result = (int) method.invoke(adminServlet, "42", 0);
         assertEquals(42, result);
     }
 
-    // Test parseOrDefault with invalid integer
     @Test
     void testParseOrDefault_InvalidInteger() throws Exception {
-        java.lang.reflect.Method method = AdminServlet.class.getDeclaredMethod("parseOrDefault", String.class, int.class);
+        var method = AdminServlet.class.getDeclaredMethod("parseOrDefault", String.class, int.class);
         method.setAccessible(true);
 
         int result = (int) method.invoke(adminServlet, "invalid", 10);
         assertEquals(10, result);
     }
 
-    // Test parseOrDefaultFloat with valid float
     @Test
     void testParseOrDefaultFloat_ValidFloat() throws Exception {
-        java.lang.reflect.Method method = AdminServlet.class.getDeclaredMethod("parseOrDefaultFloat", String.class, float.class);
+        var method = AdminServlet.class.getDeclaredMethod("parseOrDefaultFloat", String.class, float.class);
         method.setAccessible(true);
 
         float result = (float) method.invoke(adminServlet, "3.14", 0f);
         assertEquals(3.14f, result, 0.001f);
     }
 
-    // Test parseOrDefaultFloat with invalid float
     @Test
     void testParseOrDefaultFloat_InvalidFloat() throws Exception {
-        java.lang.reflect.Method method = AdminServlet.class.getDeclaredMethod("parseOrDefaultFloat", String.class, float.class);
+        var method = AdminServlet.class.getDeclaredMethod("parseOrDefaultFloat", String.class, float.class);
         method.setAccessible(true);
 
         float result = (float) method.invoke(adminServlet, "invalid", 1.5f);
         assertEquals(1.5f, result, 0.001f);
-    }
-
-
-    // Helper methods for setting up test parameters
-    private void setupValidProductParameters() {
-        when(request.getParameter("name")).thenReturn("Test Product");
-        when(request.getParameter("category")).thenReturn("animale");
-        when(request.getParameter("availability")).thenReturn("10");
-        when(request.getParameter("IVA")).thenReturn("22.0");
-        when(request.getParameter("price")).thenReturn("29.99");
-        when(request.getParameter("description")).thenReturn("A test product description.");
-    }
-
-    private void setupValidModifyParameters() {
-        when(request.getParameter("idM")).thenReturn("1");
-        when(request.getParameter("nameM")).thenReturn("Modified Product");
-        when(request.getParameter("categoryM")).thenReturn("cibo");
-        when(request.getParameter("availabilityM")).thenReturn("15");
-        when(request.getParameter("IVAM")).thenReturn("20.0");
-        when(request.getParameter("priceM")).thenReturn("39.99");
-        when(request.getParameter("descriptionM")).thenReturn("Modified description.");
-        when(request.getParameter("imageM")).thenReturn("/path/to/image.jpg");
     }
 
     @Test
@@ -575,6 +567,7 @@ class AdminServletTest {
 
         verify(response).sendRedirect("/kangaroo/ErrorPage/generalError.jsp");
     }
+
     @Test
     void testDoGet_DeleteProductNotFound_forwardsAdminWithError() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
@@ -589,6 +582,7 @@ class AdminServletTest {
         verify(dispatcher, atLeastOnce()).forward(request, response);
         verify(response, never()).sendRedirect(contains("/admin.jsp"));
     }
+
     @Test
     void testDoGet_DeleteProductSQLExceptionGeneric_redirectsGeneralError() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
@@ -607,7 +601,6 @@ class AdminServletTest {
         verify(response).sendRedirect("/kangaroo/ErrorPage/generalError.jsp");
     }
 
-
     @Test
     void testDoGet_OrdersNoFilterSQLException_redirectsGeneralError() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
@@ -621,8 +614,6 @@ class AdminServletTest {
         verify(response).sendRedirect("/kangaroo/ErrorPage/generalError.jsp");
     }
 
-
-
     @Test
     void testDoGet_ModifyProductInvalidCategory_triggersSendError() throws Exception {
         when(session.getAttribute("utente")).thenReturn(adminUser);
@@ -634,7 +625,7 @@ class AdminServletTest {
         when(request.getParameter("priceM")).thenReturn("39.99");
 
         when(request.getParameter("nameM")).thenReturn("Modified Product");
-        when(request.getParameter("categoryM")).thenReturn("NOT_A_TIPO"); // IllegalArgumentException
+        when(request.getParameter("categoryM")).thenReturn("NOT_A_TIPO");
         when(request.getParameter("descriptionM")).thenReturn("Modified description.");
 
         adminServlet.doGet(request, response);
@@ -658,6 +649,24 @@ class AdminServletTest {
         verify(mockProductModel, never()).doSave(any());
     }
 
+    // Helper methods
+    private void setupValidProductParameters() {
+        when(request.getParameter("name")).thenReturn("Test Product");
+        when(request.getParameter("category")).thenReturn("animale");
+        when(request.getParameter("availability")).thenReturn("10");
+        when(request.getParameter("IVA")).thenReturn("22.0");
+        when(request.getParameter("price")).thenReturn("29.99");
+        when(request.getParameter("description")).thenReturn("A test product description.");
+    }
 
+    private void setupValidModifyParameters() {
+        when(request.getParameter("idM")).thenReturn("1");
+        when(request.getParameter("nameM")).thenReturn("Modified Product");
+        when(request.getParameter("categoryM")).thenReturn("cibo");
+        when(request.getParameter("availabilityM")).thenReturn("15");
+        when(request.getParameter("IVAM")).thenReturn("20.0");
+        when(request.getParameter("priceM")).thenReturn("39.99");
+        when(request.getParameter("descriptionM")).thenReturn("Modified description.");
+        when(request.getParameter("imageM")).thenReturn("/path/to/image.jpg");
+    }
 }
-
