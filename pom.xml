@@ -118,6 +118,25 @@
                 </configuration>
             </plugin>
 
+            <!-- Produce anche un JAR con le classi (oltre al WAR), utile per JMH -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>classes-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>classes</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Surefire (JUnit 4 + 5) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
