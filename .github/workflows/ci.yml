@@ -28,8 +28,7 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -uroot -proot"
           --health-timeout=10s
           --health-retries=5
-        # Se la tua configurazione "volumes" funziona già per te, lasciala.
-        # In caso di errori, rimuovi volumes (su GitHub Actions spesso non serve).
+        # Se la tua initdb ti serve, puoi riattivarla.
         # volumes:
         #   - ./initdb:/docker-entrypoint-initdb.d
 
@@ -82,11 +81,20 @@ jobs:
           distribution: "temurin"
           cache: maven
 
+      # ✅ Evita rate-limit/timeout su pull Docker Hub dell'immagine Snyk
+      - name: Authenticate to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
       - name: Build (required for some projects)
         run: mvn -B -DskipTests package
 
+      # ✅ Pinned version (non usare @master)
       - name: Snyk test (fail on High/Critical)
-        uses: snyk/actions/maven@master
+        uses: snyk/actions/maven@v2.4.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
