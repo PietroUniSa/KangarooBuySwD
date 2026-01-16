@@ -82,7 +82,7 @@ jobs:
 
       # ✅ Login DockerHub (aumenta quota ed evita rate limit anonimo)
       - name: Login to Docker Hub
-      - uses: docker/login-action@v3
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
