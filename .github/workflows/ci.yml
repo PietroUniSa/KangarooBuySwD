@@ -2,14 +2,16 @@ name: CI Pipeline for Kangaroo App
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: Unit/Integration Tests (Maven + MySQL)
     runs-on: ubuntu-latest
 
     services:
@@ -26,28 +28,91 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -uroot -proot"
           --health-timeout=10s
           --health-retries=5
-        volumes:
-          - dbdata:/var/lib/mysql
-          - ./initdb:/docker-entrypoint-initdb.d
+        # Se la tua configurazione "volumes" funziona già per te, lasciala.
+        # In caso di errori, rimuovi volumes (su GitHub Actions spesso non serve).
+        # volumes:
+        #   - ./initdb:/docker-entrypoint-initdb.d
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Maven
-        uses: actions/setup-java@v3
+      - name: Setup Java (Temurin 21) + Maven cache
+        uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
 
-      # ✅ FIX: create upload dir used by AdminServlet (/var/kangaroo_uploads)
-      - name: Create upload directory
+      - name: Create upload directory (/var/kangaroo_uploads)
         run: |
           sudo mkdir -p /var/kangaroo_uploads
           sudo chmod -R 777 /var/kangaroo_uploads
 
-      - name: Install Dependencies
-        run: mvn clean install -DskipTests
+      - name: Install Dependencies (skip tests)
+        run: mvn -B clean install -DskipTests
 
       - name: Run Tests
-        run: mvn test
+        run: mvn -B test
+
+  gitguardian:
+    name: GitGuardian secret scan
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (ggshield)
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+  snyk:
+    name: Snyk dependency scan (Maven)
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build (required for some projects)
+        run: mvn -B -DskipTests package
+
+      - name: Snyk test (fail on High/Critical)
+        uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --fail-on=all
+
+  sonarqube:
+    name: SonarQube scan + Quality Gate
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: SonarQube analyze (wait for Quality Gate)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: >
+          mvn -B verify sonar:sonar
+          -Dsonar.host.url=${SONAR_HOST_URL}
+          -Dsonar.login=${SONAR_TOKEN}
+          -Dsonar.qualitygate.wait=true
