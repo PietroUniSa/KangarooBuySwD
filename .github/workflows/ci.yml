@@ -6,13 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: read
-
 jobs:
   test:
     name: Unit/Integration Tests (Maven + MySQL)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     services:
       db:
@@ -28,9 +27,6 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -uroot -proot"
           --health-timeout=10s
           --health-retries=5
-        # Se la tua initdb ti serve, puoi riattivarla.
-        # volumes:
-        #   - ./initdb:/docker-entrypoint-initdb.d
 
     steps:
       - name: Checkout repository
@@ -58,6 +54,9 @@ jobs:
     name: GitGuardian secret scan
     runs-on: ubuntu-latest
     needs: [ test ]
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,10 +66,14 @@ jobs:
         uses: GitGuardian/ggshield-action@v1
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
   snyk:
     name: Snyk dependency scan (Maven)
     runs-on: ubuntu-latest
     needs: [ test ]
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +83,6 @@ jobs:
           distribution: "temurin"
           cache: maven
 
-      # ✅ Login DockerHub (aumenta quota ed evita rate limit anonimo)
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -90,8 +92,6 @@ jobs:
       - name: Build (required for some projects)
         run: mvn -B -DskipTests package
 
-      # ✅ Versione esistente (evita @master e tag inesistenti)
-      # ✅ Retry per timeouts di rete/pull
       - name: Snyk test (fail on High/Critical)
         uses: nick-fields/retry@v3
         with:
@@ -110,6 +110,8 @@ jobs:
     name: SonarCloud scan + Quality Gate
     runs-on: ubuntu-latest
     needs: [ test ]
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4

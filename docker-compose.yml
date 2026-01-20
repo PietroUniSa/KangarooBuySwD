@@ -1,32 +1,33 @@
 services:
-  db:  # ← Come "mysql" nella guida
+  db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: kangaroodb
-      MYSQL_USER: kangaroo
-      MYSQL_PASSWORD: kangaroo
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "3307:3306"  # ← OK per accesso esterno
+      - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 20
       start_period: 30s
+
   app:
     image: pietrounisa/kangaroo-app:latest
     environment:
-      DB_URL: jdbc:mysql://db:3306/kangaroodb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DB_USER: kangaroo
-      DB_PASS: kangaroo
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
     ports:
       - "8080:8080"
     depends_on:
       - db
 
 volumes:
-  dbdata:  # ← Come "todo-db" della guida - Dati MySQL PERSISTENTI!
+  dbdata:

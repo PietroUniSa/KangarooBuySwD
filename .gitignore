@@ -38,3 +38,7 @@ build/
 
 # Docker volumes
 mysql_data/
+
+# Environment variables (non committare)
+.env
+.env.*
