@@ -126,9 +126,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -B -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B -DskipTests clean package org.sonarsource.scanner.maven:sonar-maven-plugin:5.5.0.6356:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.organization=pietro05032003 \
             -Dsonar.projectKey=PietroUniSa_KangarooBuySwD \
+            -Dsonar.branch.name=main \
             -Dsonar.qualitygate.wait=true
