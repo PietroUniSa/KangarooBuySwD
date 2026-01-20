@@ -237,20 +237,25 @@ class AdminServletTest {
 
     @Test
     void testDoGet_InsertProductSuccess() throws Exception {
+        when(request.getSession()).thenReturn(session);
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
 
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
-        when(inputStream.read(any(byte[].class))).thenReturn(-1);
+        // se Mockito ti segnala ancora Unnecessary su read, rendilo lenient:
+        lenient().when(inputStream.read(any(byte[].class))).thenReturn(-1);
 
         setupValidProductParameters();
+        when(request.getContextPath()).thenReturn("/kangaroo");
 
         adminServlet.doGet(request, response);
 
         verify(mockProductModel).doSave(any(ProdottoBean.class));
         verify(request).setAttribute("success", "Prodotto inserito correttamente.");
+        verify(response).sendRedirect("/kangaroo/admin.jsp");
     }
+
 
     @Test
     void testDoGet_InsertProductInvalidName() throws Exception {
@@ -297,12 +302,13 @@ class AdminServletTest {
 
     @Test
     void testDoGet_InsertProductSQLException() throws Exception {
+        when(request.getSession()).thenReturn(session);
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
 
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
-        when(inputStream.read(any(byte[].class))).thenReturn(-1);
+        lenient().when(inputStream.read(any(byte[].class))).thenReturn(-1);
 
         setupValidProductParameters();
         doThrow(new SQLException("Database error")).when(mockProductModel).doSave(any(ProdottoBean.class));
@@ -312,6 +318,8 @@ class AdminServletTest {
 
         verify(response).sendRedirect("/kangaroo/ErrorPage/generalError.jsp");
     }
+
+
 
     @Test
     void testDoGet_LoadProductSuccess() throws Exception {
