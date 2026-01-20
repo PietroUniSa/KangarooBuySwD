@@ -130,5 +130,5 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.organization=pietro05032003 \
-            -Dsonar.projectKey=pietro05032003 \
+            -Dsonar.projectKey=PietroUniSa_KangarooBuySwD \
             -Dsonar.qualitygate.wait=true
