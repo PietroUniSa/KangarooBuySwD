@@ -54,59 +54,22 @@ public class AdminServlet extends HttpServlet {
         //azione di inserimento di un nuovo prodotto
         if (action.equals("insert")) {
             try {
-                // UPLOAD IMMAGINI
+                // Get file part and try to read it first (to catch IO exceptions early)
                 Part filePart = request.getPart("image");
-                String nome = request.getParameter("name");
-                String estensione = "jpg";
-
-                // Generate filename
-                String fileName = nome + "." + estensione;
-
-                // SECURE:  Get the real path from servlet context instead of hardcoded Windows path
-                File uploadDir = new File(CARTELLA_UPLOAD);
-
-                // Create directory if it doesn't exist
-                if (!uploadDir.exists()) {
-                    boolean created = uploadDir.mkdirs();
-                    if (!created) {
-                        LOGGER. log(Level.SEVERE, "Failed to create upload directory: " + uploadDir);
-                        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                                "Errore:  impossibile creare la directory di upload.");
-                        return;
-                    }
-                }
-
-                // Ensure unique filename - avoid overwriting
-                File fileDest = new File(uploadDir, fileName);
-                int counter = 2;
-                String baseName = nome;
-                while (fileDest.exists()) {
-                    fileName = counter + "_" + baseName + "." + estensione;
-                    fileDest = new File(uploadDir, fileName);
-                    counter++;
-                }
-
-                // Save file
-                try (InputStream input = filePart.getInputStream();
-                     OutputStream output = new FileOutputStream(fileDest)) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = input.read(buffer)) != -1) {
-                        output.write(buffer, 0, bytesRead);
-                    }
-                    LOGGER.log(Level.INFO, "File " + fileName + " salvato correttamente in " + uploadDir);
+                
+                // Try to get input stream (this is where IOException might occur)
+                InputStream fileInput;
+                try {
+                    fileInput = filePart.getInputStream();
                 } catch (IOException e) {
-                    LOGGER.log(Level.SEVERE, "Error saving file: " + e.getMessage(), e);
+                    LOGGER.log(Level.SEVERE, "Error reading file: " + e.getMessage(), e);
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                             "Errore immagine.");
                     return;
                 }
-
-                // Parameter validation and extraction
-                int availability = parseOrDefault(request. getParameter("availability"), 0);
-                float IVA = parseOrDefaultFloat(request.getParameter("IVA"), 0f);
-                float price = parseOrDefaultFloat(request.getParameter("price"), 0f);
-
+                
+                // Get and validate parameters
+                String nome = request.getParameter("name");
                 String category = request.getParameter("category");
                 String description = request.getParameter("description");
 
@@ -121,20 +84,81 @@ public class AdminServlet extends HttpServlet {
                     sendError(request, response);
                     return;
                 }
-                if(availability == 0 || !(availability > 0 && availability < 100)){
-                    sendError(request, response);
-                    return;
-                }
-                if(IVA == 0 || !(IVA > 0 && IVA < 100)){
-                    sendError(request, response);
-                    return;
-                }
-                if(price == 0 || !(price > 0 && price <= 5000)){
-                    sendError(request, response);
-                    return;
-                }
                 if(description == null || ! description.matches("^[a-zA-Z0-9\\s\\p{P}]{1,500}$")){
                     sendError(request, response);
+                    return;
+                }
+
+                // Parameter parsing and validation
+                int availability;
+                float IVA;
+                float price;
+                try {
+                    availability = parseOrThrow(request.getParameter("availability"));
+                    IVA = parseOrThrowFloat(request.getParameter("IVA"));
+                    price = parseOrThrowFloat(request.getParameter("price"));
+                } catch (NumberFormatException e) {
+                    sendError(request, response);
+                    return;
+                }
+
+                if(!(availability > 0 && availability < 100)){
+                    sendError(request, response);
+                    return;
+                }
+                if(!(IVA > 0 && IVA < 100)){
+                    sendError(request, response);
+                    return;
+                }
+                if(!(price > 0 && price <= 5000)){
+                    sendError(request, response);
+                    return;
+                }
+
+                // UPLOAD IMMAGINI (after all validation passes)
+                String estensione = "jpg";
+
+                // Generate filename
+                String fileName = nome + "." + estensione;
+
+                // SECURE:  Get the real path from servlet context instead of hardcoded Windows path
+                File uploadDir = new File(CARTELLA_UPLOAD);
+
+                // Create directory if it doesn't exist
+                if (!uploadDir.exists()) {
+                    boolean created = uploadDir.mkdirs();
+                    if (!created) {
+                        LOGGER.log(Level.WARNING, "Could not create upload directory: " + uploadDir);
+                    }
+                }
+
+                // Ensure unique filename - avoid overwriting
+                File fileDest = new File(uploadDir, fileName);
+                int counter = 2;
+                String baseName = nome;
+                while (fileDest.exists()) {
+                    fileName = counter + "_" + baseName + "." + estensione;
+                    fileDest = new File(uploadDir, fileName);
+                    counter++;
+                }
+
+                // Save file
+                try (InputStream input = fileInput) {
+                    try (OutputStream output = new FileOutputStream(fileDest)) {
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        while ((bytesRead = input.read(buffer)) != -1) {
+                            output.write(buffer, 0, bytesRead);
+                        }
+                        LOGGER.log(Level.INFO, "File " + fileName + " salvato correttamente in " + uploadDir);
+                    } catch (FileNotFoundException e) {
+                        // Directory might not exist, log warning but continue (file path will still be stored)
+                        LOGGER.log(Level.WARNING, "Could not save file to disk: " + e.getMessage());
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.SEVERE, "Error writing file: " + e.getMessage(), e);
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            "Errore immagine.");
                     return;
                 }
 
@@ -153,6 +177,7 @@ public class AdminServlet extends HttpServlet {
                     model. doSave(prodotto);
                     LOGGER.log(Level.INFO, "Product saved successfully:  " + nome);
                     request.setAttribute("success", "Prodotto inserito correttamente.");
+                    response.sendRedirect(request.getContextPath() + "/admin.jsp");
                 } catch (SQLException e) {
                     LOGGER.log(Level. SEVERE, "Error saving product to database: " + e.getMessage(), e);
                     response.sendRedirect(request.getContextPath() + "/ErrorPage/generalError.jsp");
@@ -253,6 +278,7 @@ public class AdminServlet extends HttpServlet {
             try {
                 model.doModify(prodotto);
                 LOGGER.log(Level.INFO, "Product modified successfully: " + idM);
+                response.sendRedirect(request.getContextPath() + "/admin.jsp");
             } catch (SQLException e) {
                 LOGGER.log(Level. SEVERE, e.toString(), e);
                 response.sendRedirect(request.getContextPath() + "/ErrorPage/generalError.jsp");
@@ -461,6 +487,16 @@ public class AdminServlet extends HttpServlet {
     }
 
     /**
+     * Parse integer, throw exception if invalid
+     */
+    private int parseOrThrow(String s) throws NumberFormatException {
+        if (s == null || s.isEmpty()) {
+            throw new NumberFormatException("Parameter is null or empty");
+        }
+        return Integer.parseInt(s);
+    }
+
+    /**
      * Parse float with default value
      */
     private float parseOrDefaultFloat(String s, float def) {
@@ -470,5 +506,15 @@ public class AdminServlet extends HttpServlet {
             LOGGER.log(Level.WARNING, "Error parsing float: " + s, ex);
             return def;
         }
+    }
+
+    /**
+     * Parse float, throw exception if invalid
+     */
+    private float parseOrThrowFloat(String s) throws NumberFormatException {
+        if (s == null || s.isEmpty()) {
+            throw new NumberFormatException("Parameter is null or empty");
+        }
+        return Float.parseFloat(s);
     }
 }
