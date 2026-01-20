@@ -254,38 +254,46 @@ class AdminServletTest {
 
     @Test
     void testDoGet_InsertProductInvalidName() throws Exception {
+        when(request.getSession()).thenReturn(session);
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
 
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
-        when(inputStream.read(any(byte[].class))).thenReturn(-1);
+        // REMOVED: when(inputStream.read(...)).thenReturn(-1);
 
         setupValidProductParameters();
         when(request.getParameter("name")).thenReturn("Invalid123");
 
         adminServlet.doGet(request, response);
 
-        verify(request).setAttribute("error", "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
+        verify(request).setAttribute("error",
+                "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
         verify(dispatcher).forward(request, response);
     }
 
+
     @Test
     void testDoGet_InsertProductInvalidCategory() throws Exception {
+        when(request.getSession()).thenReturn(session);
         when(session.getAttribute("utente")).thenReturn(adminUser);
         when(request.getParameter("action")).thenReturn("insert");
 
         when(request.getPart("image")).thenReturn(filePart);
         when(filePart.getInputStream()).thenReturn(inputStream);
-        when(inputStream.read(any(byte[].class))).thenReturn(-1);
+        // REMOVED: when(inputStream.read(...)).thenReturn(-1);
 
         setupValidProductParameters();
         when(request.getParameter("category")).thenReturn("invalid_category");
 
         adminServlet.doGet(request, response);
 
-        verify(request).setAttribute("error", "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
+        verify(request).setAttribute("error",
+                "Kangaroo ha incontrato un problema con la sottomissione del form, per favore riprova.");
+        verify(dispatcher).forward(request, response);
     }
+
+
 
     @Test
     void testDoGet_InsertProductSQLException() throws Exception {
@@ -649,13 +657,12 @@ class AdminServletTest {
         verify(mockProductModel, never()).doSave(any());
     }
 
-    // Helper methods
     private void setupValidProductParameters() {
         when(request.getParameter("name")).thenReturn("Test Product");
         when(request.getParameter("category")).thenReturn("animale");
-        when(request.getParameter("availability")).thenReturn("10");
-        when(request.getParameter("IVA")).thenReturn("22.0");
-        when(request.getParameter("price")).thenReturn("29.99");
+        lenient().when(request.getParameter("availability")).thenReturn("10");
+        lenient().when(request.getParameter("IVA")).thenReturn("22.0");
+        lenient().when(request.getParameter("price")).thenReturn("29.99");
         when(request.getParameter("description")).thenReturn("A test product description.");
     }
 
