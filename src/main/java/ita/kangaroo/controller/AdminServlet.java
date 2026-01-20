@@ -102,15 +102,15 @@ public class AdminServlet extends HttpServlet {
                     return;
                 }
 
-                if(availability == 0 || !(availability > 0 && availability < 100)){
+                if(!(availability > 0 && availability < 100)){
                     sendError(request, response);
                     return;
                 }
-                if(IVA == 0 || !(IVA > 0 && IVA < 100)){
+                if(!(IVA > 0 && IVA < 100)){
                     sendError(request, response);
                     return;
                 }
-                if(price == 0 || !(price > 0 && price <= 5000)){
+                if(!(price > 0 && price <= 5000)){
                     sendError(request, response);
                     return;
                 }
@@ -126,7 +126,10 @@ public class AdminServlet extends HttpServlet {
 
                 // Create directory if it doesn't exist
                 if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
+                    boolean created = uploadDir.mkdirs();
+                    if (!created) {
+                        LOGGER.log(Level.WARNING, "Could not create upload directory: " + uploadDir);
+                    }
                 }
 
                 // Ensure unique filename - avoid overwriting
@@ -139,7 +142,7 @@ public class AdminServlet extends HttpServlet {
                     counter++;
                 }
 
-                // Save file (try to save, but don't fail if directory doesn't exist in test environment)
+                // Save file
                 try (InputStream input = fileInput) {
                     try (OutputStream output = new FileOutputStream(fileDest)) {
                         byte[] buffer = new byte[1024];
@@ -149,8 +152,8 @@ public class AdminServlet extends HttpServlet {
                         }
                         LOGGER.log(Level.INFO, "File " + fileName + " salvato correttamente in " + uploadDir);
                     } catch (FileNotFoundException e) {
-                        // Directory might not exist in test environment, that's OK
-                        LOGGER.log(Level.WARNING, "Could not save file (test environment?): " + e.getMessage());
+                        // Directory might not exist, log warning but continue (file path will still be stored)
+                        LOGGER.log(Level.WARNING, "Could not save file to disk: " + e.getMessage());
                     }
                 } catch (IOException e) {
                     LOGGER.log(Level.SEVERE, "Error writing file: " + e.getMessage(), e);
