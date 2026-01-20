@@ -71,7 +71,7 @@ public class DettagliOrdini extends HttpServlet {
                 return;
             }
 
-            ArrayList<ProdottoBean> product = new ArrayList<ProdottoBean>(); // dati necessari alla creazione della fattura
+            ArrayList<ProdottoBean> product = new ArrayList<>(); // dati necessari alla creazione della fattura
             for(OrderProductBean prodotto : products){
                 ProdottoBean prod = null;
                 try {

@@ -1,28 +1,27 @@
 package ita.kangaroo.model;
 
 public class ciboBean extends ProdottoBean {
-    private int id;
+
     private double peso;
 
     public ciboBean(int id, double peso) {
-        this.id = id;
+        super.setId(id);      // oppure super(id, ...)
         this.peso = peso;
     }
 
-    public ciboBean(int id, String descrizione, String nome,String immagine, float prezzo, int quantita, float iva, ita.kangaroo.model.tipo tipo, int id1, double peso) {
-        super(id, descrizione, nome,immagine, prezzo, quantita, iva, tipo);
-        this.id = id1;
+    public ciboBean(
+            int id,
+            String descrizione,
+            String nome,
+            String immagine,
+            float prezzo,
+            int quantita,
+            float iva,
+            tipo tipo,
+            double peso
+    ) {
+        super(id, descrizione, nome, immagine, prezzo, quantita, iva, tipo);
         this.peso = peso;
-    }
-    @Override
-    public int getId() {
-        return super.getId();
-    }
-
-
-    @Override
-    public void setId(int id) {
-        this.id = id;
     }
 
     public double getPeso() {

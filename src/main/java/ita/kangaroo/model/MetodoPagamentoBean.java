@@ -1,5 +1,7 @@
 package ita.kangaroo.model;
 
+import java.util.Objects;
+
 public class MetodoPagamentoBean {
 
     /*@ spec_public @*/ private int id;
@@ -116,5 +118,9 @@ public class MetodoPagamentoBean {
         if (!(obj instanceof MetodoPagamentoBean)) return false;
         MetodoPagamentoBean other = (MetodoPagamentoBean) obj;
         return this.id == other.id;
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, numero_carta, cvv, data_scadenza, circuito, username);
     }
 }

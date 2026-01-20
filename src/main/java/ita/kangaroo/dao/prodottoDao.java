@@ -152,7 +152,7 @@ public class prodottoDao {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        List<ProdottoBean> products = new ArrayList<ProdottoBean>();
+        List<ProdottoBean> products = new ArrayList<>();
 
         String selectSQL = "SELECT * FROM " + TABLE;
 
@@ -195,7 +195,7 @@ public class prodottoDao {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        ArrayList<ProdottoBean> products = new ArrayList<ProdottoBean>();
+        ArrayList<ProdottoBean> products = new ArrayList<>();
 
         String selectSQL = "SELECT * FROM " + TABLE + " LIMIT 10";
 
@@ -277,7 +277,7 @@ public class prodottoDao {
 
         String selectSQL = "SELECT * FROM " + TABLE + " WHERE Tipo = ? ";
 
-        ArrayList<ProdottoBean> beans = new ArrayList<ProdottoBean>();
+        ArrayList<ProdottoBean> beans = new ArrayList<>();
 
         try {
             connection = ds.getConnection();
@@ -344,13 +344,15 @@ public class prodottoDao {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Descrizione LIKE " + "'%" + keyword + "%'" + query;
+        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Descrizione LIKE ?" + sanitizeQuerySuffix(query);
 
-        ArrayList<ProdottoBean> beans = new ArrayList<ProdottoBean>();
+        ArrayList<ProdottoBean> beans = new ArrayList<>();
 
         try {
             connection = ds.getConnection();
             preparedStatement = connection.prepareStatement(selectSQL);
+
+            preparedStatement.setString(1, "%" + (keyword == null ? "" : keyword) + "%");
 
             ResultSet rs = preparedStatement.executeQuery();
 
@@ -364,18 +366,94 @@ public class prodottoDao {
                 prod.setTipo(tipo.valueOf(rs.getString("Tipo")));
                 prod.setIva(rs.getFloat("IVA"));
                 prod.setImmagine(rs.getString("immagine"));
-
                 beans.add(prod);
             }
         } finally {
             try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
+                if (preparedStatement != null) preparedStatement.close();
             } finally {
-                if (connection != null)
-                    connection.close();
+                if (connection != null) connection.close();
             }
         }
+
+        return beans;
+    }
+    private static String sanitizeQuerySuffix(String query) {
+        if (query == null) return "";
+        String q = query.trim();
+        if (q.isEmpty()) return "";
+
+        // normalizza spazi
+        q = " " + q.replaceAll("\\s+", " ").trim();
+
+        // whitelist: metti qui SOLO le opzioni che usate davvero (anche 2 sole)
+        switch (q) {
+            case " ORDER BY Nome":
+            case " ORDER BY Prezzo":
+            case " ORDER BY Prezzo DESC":
+                return q;
+            default:
+                return "";
+        }
+    }
+
+    public synchronized ArrayList<ProdottoBean> doRetrieveByFilters(
+            String keyword,
+            float prezzoDa,
+            float prezzoA,
+            String categoria
+    ) throws SQLException {
+
+        Connection connection = null;
+        PreparedStatement ps = null;
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM ").append(TABLE)
+                .append(" WHERE Descrizione LIKE ?")
+                .append(" AND Prezzo >= ? AND Prezzo <= ?");
+
+        boolean hasCategoria = (categoria != null && !categoria.trim().isEmpty());
+        if (hasCategoria) {
+            sql.append(" AND Tipo = ?");
+        }
+
+        ArrayList<ProdottoBean> beans = new ArrayList<>();
+
+        try {
+            connection = ds.getConnection();
+            ps = connection.prepareStatement(sql.toString());
+
+            int i = 1;
+            ps.setString(i++, "%" + (keyword == null ? "" : keyword) + "%");
+            ps.setFloat(i++, prezzoDa);
+            ps.setFloat(i++, prezzoA);
+
+            if (hasCategoria) {
+                ps.setString(i++, categoria.trim());
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ProdottoBean prod = new ProdottoBean();
+                prod.setId(rs.getInt("Id"));
+                prod.setNome(rs.getString("Nome"));
+                prod.setDescrizione(rs.getString("Descrizione"));
+                prod.setPrezzo(rs.getFloat("Prezzo"));
+                prod.setQuantita(rs.getInt("QuantitaDisponibile"));
+                prod.setTipo(tipo.valueOf(rs.getString("Tipo")));
+                prod.setIva(rs.getFloat("IVA"));
+                prod.setImmagine(rs.getString("immagine"));
+                beans.add(prod);
+            }
+
+        } finally {
+            try {
+                if (ps != null) ps.close();
+            } finally {
+                if (connection != null) connection.close();
+            }
+        }
+
         return beans;
     }
 
@@ -384,13 +462,15 @@ public class prodottoDao {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Nome LIKE '" + keyword + "%'";
+        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Nome LIKE ?";
 
-        ArrayList<ProdottoBean> beans = new ArrayList<ProdottoBean>();
+        ArrayList<ProdottoBean> beans = new ArrayList<>();
 
         try {
             connection = ds.getConnection();
             preparedStatement = connection.prepareStatement(selectSQL);
+
+            preparedStatement.setString(1, (keyword == null ? "" : keyword) + "%");
 
             ResultSet rs = preparedStatement.executeQuery();
 
@@ -404,16 +484,13 @@ public class prodottoDao {
                 prod.setTipo(tipo.valueOf(rs.getString("Tipo")));
                 prod.setIva(rs.getFloat("IVA"));
                 prod.setImmagine(rs.getString("immagine"));
-
                 beans.add(prod);
             }
         } finally {
             try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
+                if (preparedStatement != null) preparedStatement.close();
             } finally {
-                if (connection != null)
-                    connection.close();
+                if (connection != null) connection.close();
             }
         }
         return beans;

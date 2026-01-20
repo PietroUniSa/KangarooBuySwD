@@ -64,11 +64,14 @@ public class GestioneCatalogo extends HttpServlet {
                 float prezzo_a = 5000;
 
                 try {
-                    if (request.getParameter("prezzo_da") != null && !request.getParameter("prezzo_da").isEmpty()) {
-                        prezzo_da = Float.parseFloat(request.getParameter("prezzo_da"));
+                    String pDa = request.getParameter("prezzo_da");
+                    String pA  = request.getParameter("prezzo_a");
+
+                    if (pDa != null && !pDa.isEmpty()) {
+                        prezzo_da = Float.parseFloat(pDa);
                     }
-                    if (request.getParameter("prezzo_a") != null && !request.getParameter("prezzo_a").isEmpty()) {
-                        prezzo_a = Float.parseFloat(request.getParameter("prezzo_a"));
+                    if (pA != null && !pA.isEmpty()) {
+                        prezzo_a = Float.parseFloat(pA);
                     }
                 } catch (NumberFormatException e) {
                     LOGGER.log(Level.SEVERE, "Invalid price format", e);
@@ -78,15 +81,9 @@ public class GestioneCatalogo extends HttpServlet {
 
                 String categoria = request.getParameter("categoria");
 
-                StringBuilder sql = new StringBuilder();
-                sql.append(" AND Prezzo >= ").append(prezzo_da).append(" AND Prezzo <= ").append(prezzo_a);
-
-                if (categoria != null && !categoria.isEmpty()) {
-                    sql.append(" AND Tipo = '").append(categoria).append("'");
-                }
-
                 try {
-                    result = model.doRetrieveAllByKeyword("", sql.toString());
+                    // keyword qui è vuota come nel tuo codice originale
+                    result = model.doRetrieveByFilters("", prezzo_da, prezzo_a, categoria);
                 } catch (SQLException e) {
                     LOGGER.log(Level.SEVERE, e.toString(), e);
                     response.sendRedirect("./ErrorPage/generalError.jsp");

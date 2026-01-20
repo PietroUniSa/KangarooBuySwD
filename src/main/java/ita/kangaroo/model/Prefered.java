@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Prefered {
 
     /*@ spec_public @*/
-    private ArrayList<PreferedProduct> products = new ArrayList<PreferedProduct>();
+    private ArrayList<PreferedProduct> products = new ArrayList<>();
 
     //@ public invariant products != null;
 
@@ -57,6 +57,6 @@ public class Prefered {
       @   assignable \nothing;
       @*/
     public /*@ pure @*/ ArrayList<PreferedProduct> getProducts() {
-        return new ArrayList<PreferedProduct>(products);
+        return new ArrayList<>(products);
     }
 }

@@ -34,7 +34,7 @@ public class OrdineBean {
       @   ensures prezzo_totale == 0.0f;
       @*/
     public OrdineBean() {
-        products = new ArrayList<OrderProductBean>();
+        products = new ArrayList<>();
         this.id = 0;
         this.client = null;
         this.prezzo_totale = 0.0f;
@@ -82,7 +82,7 @@ public class OrdineBean {
       @   ensures prezzo_totale == 0.0f;
       @*/
     public OrdineBean(/*@ nullable @*/ utenteBean client) {
-        products = new ArrayList<OrderProductBean>();
+        products = new ArrayList<>();
         this.id = 0;
         this.client = client;
         this.prezzo_totale = 0.0f;
@@ -132,7 +132,7 @@ public class OrdineBean {
         this.numero_di_tracking = numero_di_tracking;
         this.data = data;
         this.metodo_di_spedizione = metodo_di_spedizione;
-        this.products = new ArrayList<OrderProductBean>();
+        this.products = new ArrayList<>();
     }
 
     /*@ public normal_behavior ensures \result == products; assignable \nothing; @*/

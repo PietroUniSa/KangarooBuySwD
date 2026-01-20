@@ -112,7 +112,7 @@ public class Cart {
       @   assignable \nothing;
       @*/
     public ArrayList<CartProduct> getProducts() {
-        ArrayList<CartProduct> list = new ArrayList<CartProduct>();
+        ArrayList<CartProduct> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             // difensivo: se per qualche motivo c'è un null, non esplodiamo
             if (products[i] != null) list.add(products[i]);

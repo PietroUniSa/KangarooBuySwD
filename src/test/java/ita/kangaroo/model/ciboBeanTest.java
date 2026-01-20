@@ -58,8 +58,17 @@ class ciboBeanTest {
         @DisplayName("Should create ciboBean with full constructor")
         void shouldCreateCiboBeanWithFullConstructor() {
             // Arrange & Act
-            ciboBean cibo = new ciboBean(1, "Descrizione test", "Nome test",
-                    "immagine.jpg", 10.5f, 5, 0.22f, tipo.cibo, 2, 1.5);
+            ciboBean cibo = new ciboBean(
+                    1,
+                    "Descrizione test",
+                    "Nome test",
+                    "immagine.jpg",
+                    10.5f,
+                    5,
+                    0.22f,
+                    tipo.cibo,
+                    1.5
+            );
 
             // Assert
             assertEquals(1.5, cibo.getPeso());
@@ -71,7 +80,7 @@ class ciboBeanTest {
         void shouldCreateCiboBeanWithFullConstructorAccessorioType() {
             // Arrange & Act
             ciboBean cibo = new ciboBean(1, "Descrizione accessorio", "Nome accessorio",
-                    "accessorio.jpg", 15.0f, 3, 0.22f, tipo.accessorio, 3, 0.8);
+                    "accessorio.jpg", 15.0f, 3, 0.22f, tipo.accessorio, 0.8);
 
             // Assert
             assertEquals(0.8, cibo.getPeso());
@@ -81,7 +90,7 @@ class ciboBeanTest {
         @DisplayName("Should create ciboBean with full constructor using null values")
         void shouldCreateCiboBeanWithFullConstructorNullValues() {
             // Arrange & Act
-            ciboBean cibo = new ciboBean(1, null, null, null, 0.0f, 0, 0.0f, null, 2, 0.0);
+            ciboBean cibo = new ciboBean(1, null, null, null, 0.0f, 0, 0.0f, null,  0.0);
 
             // Assert
             assertEquals(0.0, cibo.getPeso());
@@ -91,7 +100,7 @@ class ciboBeanTest {
         @DisplayName("Should create ciboBean with full constructor using empty strings")
         void shouldCreateCiboBeanWithFullConstructorEmptyStrings() {
             // Arrange & Act
-            ciboBean cibo = new ciboBean(1, "", "", "", 0.0f, 0, 0.0f, tipo.cibo, 2, 0.0);
+            ciboBean cibo = new ciboBean(1, "", "", "", 0.0f, 0, 0.0f, tipo.cibo, 0.0);
 
             // Assert
             assertEquals(0.0, cibo.getPeso());
@@ -107,7 +116,7 @@ class ciboBeanTest {
             for (tipo currentTipo : allTipos) {
                 // Arrange & Act
                 ciboBean cibo = new ciboBean(1, "Desc", "Nome", "img.jpg",
-                        10.0f, 1, 0.2f, currentTipo, 2, 1.0);
+                        10.0f, 1, 0.2f, currentTipo,  1.0);
 
                 // Assert
                 assertEquals(1.0, cibo.getPeso(),

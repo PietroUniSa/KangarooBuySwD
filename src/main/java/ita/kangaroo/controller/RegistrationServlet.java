@@ -18,6 +18,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.regex.Pattern;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,7 +32,14 @@ public class RegistrationServlet extends HttpServlet {
 
 
     private static final Logger LOGGER = Logger.getLogger(RegistrationServlet.class.getName() );
+    private static final int MAX_EMAIL_LEN = 254;
 
+    // Regex "safe" (evita backtracking catastrofico) + TLD più realistico
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9_]++(?:[.-]?[A-Za-z0-9_]++)*+@"
+                    + "[A-Za-z0-9_]++(?:[.-]?[A-Za-z0-9_]++)*+\\."
+                    + "[A-Za-z]{2,63}+$"
+    );
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
 
         utenteBean cliente = new utenteBean();
@@ -45,7 +53,7 @@ public class RegistrationServlet extends HttpServlet {
             return;
         }
 
-        if(action != null && ajax){ //ajax è una variabile necessaria a distinguere le richieste di ajax e le richieste normali della jsp
+        if(ajax){ //ajax è una variabile necessaria a distinguere le richieste di ajax e le richieste normali della jsp
             boolean bol;
             utenteBean result = null;
             if (action.equalsIgnoreCase("check") ){ // si controlla se è già presente questo username nel database
@@ -121,10 +129,13 @@ public class RegistrationServlet extends HttpServlet {
                 sendError(request, response);
                 return;
             }
-            if(email==null || !email.matches("^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")){
+            email = (email == null) ? null : email.trim();
+
+            if (email == null || email.length() > MAX_EMAIL_LEN || !EMAIL_PATTERN.matcher(email).matches()) {
                 sendError(request, response);
                 return;
             }
+
             if(password==null || !password.matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,20}$")){
                 sendError(request, response);
                 return;

@@ -41,8 +41,8 @@ public class AdminServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        ArrayList<OrdineBean> orders = new ArrayList<OrdineBean>();
-        ArrayList<utenteBean> clients = new ArrayList<utenteBean>();
+        ArrayList<OrdineBean> orders = new ArrayList<>();
+        ArrayList<utenteBean> clients = new ArrayList<>();
 
         //se l'azione è nulla o è una stringa vuota, vuol dire che si sta accedendo alla pagina stessa (anche da url) e si viene ridirezionati
         if(action == null || action.equals("")){

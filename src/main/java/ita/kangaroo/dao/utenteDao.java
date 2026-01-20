@@ -123,7 +123,9 @@ public class utenteDao {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
 
-        String selectSQL = "SELECT * FROM " + TABLE + " WHERE Email=? AND Password=SHA1(?)";
+        String selectSQL =
+                "SELECT * FROM " + TABLE +
+                        " WHERE Email=? AND `Password` = SHA1(?)";
         utenteBean client = null;
 
         try {

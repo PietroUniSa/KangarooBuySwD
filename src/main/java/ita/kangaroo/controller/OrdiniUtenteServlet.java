@@ -29,7 +29,7 @@ public class OrdiniUtenteServlet extends HttpServlet{
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
 
-        ArrayList<OrdineBean> orders = new ArrayList<OrdineBean>();
+        ArrayList<OrdineBean> orders = new ArrayList<>();
         utenteBean client = (utenteBean) request.getSession().getAttribute("utente");
         if (client == null){
             response.sendRedirect("LoginServlet");

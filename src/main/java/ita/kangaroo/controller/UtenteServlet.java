@@ -76,10 +76,7 @@ public class UtenteServlet extends HttpServlet {
             return;
         }
 
-
-        if(action != null){
-
-            if(action.equalsIgnoreCase("modify")){ // modifica dei dati personali con controllo dei form server side
+        if(action.equalsIgnoreCase("modify")){ // modifica dei dati personali con controllo dei form server side
 
                 String nome = request.getParameter("nome");
                 String cognome = request.getParameter("cognome");
@@ -267,9 +264,8 @@ public class UtenteServlet extends HttpServlet {
                     response.sendRedirect("./ErrorPage/generalError.jsp");
                     return;
                 }
-
             }
-        }
+
 
 
         RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/Cliente.jsp");

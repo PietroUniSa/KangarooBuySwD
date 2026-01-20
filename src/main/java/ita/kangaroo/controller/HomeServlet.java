@@ -25,7 +25,7 @@ public class HomeServlet extends HttpServlet {
         prodottoDao model = new prodottoDao();
 
 
-        ArrayList<ProdottoBean> prodotti = new ArrayList<ProdottoBean>();
+        ArrayList<ProdottoBean> prodotti = new ArrayList<>();
 
         try {
             prodotti = model.doRetrieveAllLimit();
