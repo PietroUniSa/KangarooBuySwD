@@ -143,42 +143,36 @@ class GestioneCatalogoTest {
     }
 
     @Test
-    void ajax_filter_buildsSqlAndReturnsJson() throws Exception {
-        GestioneCatalogo s = servlet();
+void ajax_filter_callsDoRetrieveByFiltersAndReturnsJson() throws Exception {
+    GestioneCatalogo s = servlet();
 
-        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
-        when(request.getParameter("action")).thenReturn("filter");
+    when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+    when(request.getParameter("action")).thenReturn("filter");
 
-        when(request.getParameter("prezzo_da")).thenReturn("10");
-        when(request.getParameter("prezzo_a")).thenReturn("99.9");
-        when(request.getParameter("categoria")).thenReturn("ANIMALI");
+    when(request.getParameter("prezzo_da")).thenReturn("10");
+    when(request.getParameter("prezzo_a")).thenReturn("99.9");
+    when(request.getParameter("categoria")).thenReturn("ANIMALI");
 
-        ArrayList<ProdottoBean> list = new ArrayList<>();
-        list.add(new ProdottoBean());
+    ArrayList<ProdottoBean> list = new ArrayList<>();
+    list.add(new ProdottoBean());
 
-        StringWriter sw = wireResponseWriter(response);
+    StringWriter sw = wireResponseWriter(response);
 
-        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
-                (mock, ctx) -> {
-                    when(mock.doRetrieveAllByKeyword(eq(""), anyString())).thenReturn(list);
-                })) {
+    try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+            (mock, ctx) -> when(mock.doRetrieveByFilters(eq(""), eq(10.0f), eq(99.9f), eq("ANIMALI")))
+                    .thenReturn(list))) {
 
-            s.doGet(request, response);
+        s.doGet(request, response);
 
-            prodottoDao daoMock = mocked.constructed().get(0);
-            // Verifica che la SQL contenga i pezzi importanti
-            verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
-                    sql.contains("Prezzo >=") &&
-                            sql.contains("10") &&
-                            sql.contains("Prezzo <=") &&
-                            sql.contains("99.9") &&
-                            sql.contains("Tipo = 'ANIMALI'")
-            ));
-        }
-
-        JsonArray arr = parseJsonArray(sw.toString());
-        assertEquals(1, arr.size());
+        prodottoDao daoMock = mocked.constructed().get(0);
+        verify(daoMock).doRetrieveByFilters("", 10.0f, 99.9f, "ANIMALI");
+        verify(daoMock, never()).doRetrieveAllByKeyword(anyString(), anyString());
     }
+
+    JsonArray arr = parseJsonArray(sw.toString());
+    assertEquals(1, arr.size());
+}
+
 
     @Test
     void ajax_filter_invalidPrice_redirectsToGeneralError() throws Exception {
@@ -228,69 +222,66 @@ class GestioneCatalogoTest {
         verify(response).setContentType("application/json");
         assertEquals("null", sw.toString()); // Gson serializza null come "null"
     }
-    @Test
-    void ajax_filter_defaultsWhenPricesMissing_andEmptyCategory() throws Exception {
-        GestioneCatalogo s = servlet();
 
-        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
-        when(request.getParameter("action")).thenReturn("filter");
+   @Test
+void ajax_filter_defaultsWhenPricesMissing_andEmptyCategory() throws Exception {
+    GestioneCatalogo s = servlet();
 
-        // prezzi mancanti -> default
-        when(request.getParameter("prezzo_da")).thenReturn(null);
-        when(request.getParameter("prezzo_a")).thenReturn("");
-        when(request.getParameter("categoria")).thenReturn(""); // vuota
+    when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+    when(request.getParameter("action")).thenReturn("filter");
 
-        ArrayList<ProdottoBean> list = new ArrayList<>();
-        list.add(new ProdottoBean());
+    when(request.getParameter("prezzo_da")).thenReturn(null);
+    when(request.getParameter("prezzo_a")).thenReturn("");
+    when(request.getParameter("categoria")).thenReturn(""); // vuota
 
-        StringWriter sw = wireResponseWriter(response);
+    ArrayList<ProdottoBean> list = new ArrayList<>();
+    list.add(new ProdottoBean());
 
-        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
-                (mock, ctx) -> when(mock.doRetrieveAllByKeyword(eq(""), anyString())).thenReturn(list))) {
+    StringWriter sw = wireResponseWriter(response);
 
-            s.doGet(request, response);
+    try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+            (mock, ctx) -> when(mock.doRetrieveByFilters(eq(""), eq(0.0f), eq(5000.0f), eq("")))
+                    .thenReturn(list))) {
 
-            prodottoDao daoMock = mocked.constructed().get(0);
-            verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
-                    sql.contains("Prezzo >=") &&
-                            sql.contains("0.0") &&
-                            sql.contains("Prezzo <=") &&
-                            sql.contains("5000.0") &&
-                            !sql.contains("Tipo =")
-            ));
-        }
+        s.doGet(request, response);
 
-        JsonArray arr = parseJsonArray(sw.toString());
-        assertEquals(1, arr.size());
+        prodottoDao daoMock = mocked.constructed().get(0);
+        verify(daoMock).doRetrieveByFilters("", 0.0f, 5000.0f, "");
+        verify(daoMock, never()).doRetrieveAllByKeyword(anyString(), anyString());
     }
-    @Test
-    void ajax_filter_onlyPrezzoDa_set_prezzoA_default5000() throws Exception {
-        GestioneCatalogo s = servlet();
 
-        when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
-        when(request.getParameter("action")).thenReturn("filter");
+    JsonArray arr = parseJsonArray(sw.toString());
+    assertEquals(1, arr.size());
+}
 
-        when(request.getParameter("prezzo_da")).thenReturn("15.5");
-        when(request.getParameter("prezzo_a")).thenReturn(""); // default
-        when(request.getParameter("categoria")).thenReturn(null);
+   @Test
+void ajax_filter_onlyPrezzoDa_set_prezzoA_default5000() throws Exception {
+    GestioneCatalogo s = servlet();
 
-        ArrayList<ProdottoBean> list = new ArrayList<>();
-        list.add(new ProdottoBean());
+    when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
+    when(request.getParameter("action")).thenReturn("filter");
 
-        wireResponseWriter(response);
+    when(request.getParameter("prezzo_da")).thenReturn("15.5");
+    when(request.getParameter("prezzo_a")).thenReturn(""); // default
+    when(request.getParameter("categoria")).thenReturn(null);
 
-        try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
-                (mock, ctx) -> when(mock.doRetrieveAllByKeyword(eq(""), anyString())).thenReturn(list))) {
+    ArrayList<ProdottoBean> list = new ArrayList<>();
+    list.add(new ProdottoBean());
 
-            s.doGet(request, response);
+    wireResponseWriter(response);
 
-            prodottoDao daoMock = mocked.constructed().get(0);
-            verify(daoMock).doRetrieveAllByKeyword(eq(""), argThat(sql ->
-                    sql.contains("Prezzo >= 15.5") &&
-                            sql.contains("Prezzo <= 5000.0")
-            ));
-        }
+    try (MockedConstruction<prodottoDao> mocked = mockConstruction(prodottoDao.class,
+            (mock, ctx) -> when(mock.doRetrieveByFilters(eq(""), eq(15.5f), eq(5000.0f), isNull()))
+                    .thenReturn(list))) {
+
+        s.doGet(request, response);
+
+        prodottoDao daoMock = mocked.constructed().get(0);
+        verify(daoMock).doRetrieveByFilters("", 15.5f, 5000.0f, null);
+        verify(daoMock, never()).doRetrieveAllByKeyword(anyString(), anyString());
     }
+}
+
     @Test
     void ajax_suggest_keywordNull_stillQueriesDaoAndReturnsJson() throws Exception {
         GestioneCatalogo s = servlet();
