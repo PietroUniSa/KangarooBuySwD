@@ -5,6 +5,7 @@ import ita.kangaroo.model.tipo;
 import org.junit.jupiter. api.BeforeEach;
 import org.junit.jupiter. api.Test;
 import org.junit. jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org. mockito.junit. jupiter.MockitoExtension;
 
@@ -1025,6 +1026,165 @@ class prodottoDaoTest {
         assertEquals("Connection close failed", exception.getMessage());
 
         verify(mockConnection).close(); // Verify close was attempted
+    }
+
+        // === TESTS FOR doRetrieveByFilters() ===
+
+    @Test
+    void testDoRetrieveByFilters_WithCategoria_AppendsTipoAndBindsCategoriaTrimmed() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+
+        // catturiamo la SQL con ArgumentCaptor
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        String keyword = "cane";
+        float prezzoDa = 10.0f;
+        float prezzoA = 100.0f;
+        String categoria = "  cibo  "; // con spazi -> deve fare trim
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveByFilters(keyword, prezzoDa, prezzoA, categoria);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // Verifica: parametri bindati correttamente
+        verify(mockPreparedStatement).setString(1, "%cane%");
+        verify(mockPreparedStatement).setFloat(2, 10.0f);
+        verify(mockPreparedStatement).setFloat(3, 100.0f);
+
+        // IMPORTANTISSIMO: questo copre il ramo hasCategoria=true
+        verify(mockPreparedStatement).setString(4, "cibo");
+
+        // Verifica che la query contenga "AND Tipo = ?"
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockConnection).prepareStatement(sqlCaptor.capture());
+
+        String sql = sqlCaptor.getValue();
+        assertTrue(sql.contains("AND Tipo = ?"), "SQL should include category filter when categoria is provided");
+    }
+
+    @Test
+    void testDoRetrieveByFilters_CategoriaNull_DoesNotAppendTipoAndDoesNotBindFourthParam() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveByFilters("cane", 0.0f, 999.0f, null);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // bind dei 3 parametri base
+        verify(mockPreparedStatement).setString(1, "%cane%");
+        verify(mockPreparedStatement).setFloat(2, 0.0f);
+        verify(mockPreparedStatement).setFloat(3, 999.0f);
+
+        // Non deve bindare la categoria
+        verify(mockPreparedStatement, never()).setString(eq(4), anyString());
+
+        // SQL non deve contenere AND Tipo = ?
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockConnection).prepareStatement(sqlCaptor.capture());
+        assertFalse(sqlCaptor.getValue().contains("AND Tipo = ?"));
+    }
+
+    @Test
+    void testDoRetrieveByFilters_CategoriaBlank_DoesNotAppendTipoAndDoesNotBindFourthParam() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveByFilters("cane", 0.0f, 999.0f, "   ");
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(mockPreparedStatement).setString(1, "%cane%");
+        verify(mockPreparedStatement).setFloat(2, 0.0f);
+        verify(mockPreparedStatement).setFloat(3, 999.0f);
+
+        // Non deve bindare la categoria
+        verify(mockPreparedStatement, never()).setString(eq(4), anyString());
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockConnection).prepareStatement(sqlCaptor.capture());
+        assertFalse(sqlCaptor.getValue().contains("AND Tipo = ?"));
+    }
+
+    @Test
+    void testDoRetrieveByFilters_KeywordNull_BindsEmptyLike() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveByFilters(null, 1.0f, 2.0f, null);
+
+        // Assert
+        assertNotNull(result);
+        verify(mockPreparedStatement).setString(1, "%%"); // keyword null -> "" -> "%%"
+        verify(mockPreparedStatement).setFloat(2, 1.0f);
+        verify(mockPreparedStatement).setFloat(3, 2.0f);
+    }
+
+    @Test
+    void testDoRetrieveAllByKeyword_WithWhitelistedOrderByPrezzoDesc_AppendsSuffix() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+
+        // cattura SQL per vedere se aggiunge ORDER BY Prezzo DESC
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByKeyword("cane", " ORDER BY Prezzo DESC");
+
+        // Assert
+        assertNotNull(result);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockConnection).prepareStatement(sqlCaptor.capture());
+
+        String sql = sqlCaptor.getValue();
+        assertTrue(sql.contains("ORDER BY Prezzo DESC"), "Expected whitelisted ORDER BY to be appended");
+    }
+
+    @Test
+    void testDoRetrieveAllByKeyword_WithNotWhitelistedOrderByAsc_IsSanitizedAway() throws Exception {
+        // Arrange
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Act
+        ArrayList<ProdottoBean> result = prodottoDao.doRetrieveAllByKeyword("cane", " ORDER BY Prezzo ASC");
+
+        // Assert
+        assertNotNull(result);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockConnection).prepareStatement(sqlCaptor.capture());
+
+        String sql = sqlCaptor.getValue();
+        assertFalse(sql.contains("ORDER BY Prezzo ASC"), "Non-whitelisted ORDER BY should be removed");
+        assertFalse(sql.contains("ORDER BY"), "Non-whitelisted suffix should result in no ORDER BY");
     }
 
 }
